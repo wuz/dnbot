@@ -147,4 +147,7 @@ bot.addListener("message", function(from, to, text, message) {
 		});
 		storage.setItem(from, JSON.stringify(userVars));
 	}
+	if(text.substr(0,5)=="!nick") {
+		bot.say(config.channels[0], "/nick DNBOT1");
+	}
 });
