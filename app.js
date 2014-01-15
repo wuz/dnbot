@@ -77,7 +77,7 @@ bot.addListener("message", function(from, to, text, message) {
 	}
 
 	if(text.substr(0,6)=="!help") {
-		bot.say(from, "Hi "+from+"! Here are my commands\n!motd - display the current DN MOTD\n!weather <zip,city,location> - tells you the weather in a location.\n!help - displays this help dialog\n!btc - returns the current bitcoin price\n!feature <feature request> - request a feature for the bot\n!set dribbble <username> - set your dribbble username\n!dribbble - return your most recent followed shot (must have !set dribbble <username> before using)");
+		bot.say(from, "Hi "+from+"! Here are my commands\n!motd - display the current DN MOTD\n!weather <zip,city,location> - tells you the weather in a location.\n!help - displays this help dialog\n!btc - returns the current bitcoin price\n!feature <feature request> - request a feature for the bot\n!set dribbble <username> - set your dribbble username\n!dribbble - return your most recent followed shot (must have !set dribbble <username> before using)\n!gifme <term> - returns a gif related to the term");
 	}
 
 	if(text.substr(0,5)=="!btc") {
@@ -161,7 +161,6 @@ bot.addListener("message", function(from, to, text, message) {
 			res.on('end', function() {
 				var dataResponse = JSON.parse(body);
 				if(dataResponse) {
-					//console.log(dataResponse);
 					bot.say(config.channels[0],dataResponse.data.image_original_url);
 				} else {
 					botError();
