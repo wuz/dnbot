@@ -145,9 +145,30 @@ bot.addListener("message", function(from, to, text, message) {
 		}).on('error', function(e) {
 			console.log("Got error: ", e);
 		});
-		storage.setItem(from, JSON.stringify(userVars));
 	}
+
 	if(text.substr(0,5)=="!nick") {
 		bot.say(config.channels[0], "/nick DNBOT1");
+	}
+
+	if(text.substr(0,6)=="!gifme") {
+		var giphy_url = "http://api.giphy.com/v1/gifs/random?api_key=dc6zaTOxFJmzC&tag="+encodeURIComponent(text.substr(6));
+		http.get(giphy_url, function(res) {
+			var body = '';
+			res.on('data', function(chunk) {
+				body += chunk;
+			});
+			res.on('end', function() {
+				var dataResponse = JSON.parse(body);
+				if(dataResponse) {
+					//console.log(dataResponse);
+					bot.say(config.channels[0],dataResponse.data.image_original_url);
+				} else {
+					botError();
+				}
+			});
+		}).on('error', function(e) {
+			console.log("Got error: ", e);
+		});
 	}
 });
