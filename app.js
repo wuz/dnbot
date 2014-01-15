@@ -137,7 +137,7 @@ bot.addListener("message", function(from, to, text, message) {
 			res.on('end', function() {
 				var dribbbleResponse = JSON.parse(body);
 				if(dribbbleResponse) {
-					bot.say(config.channels[0],dribbbleResponse.shots[0].short_url);
+					bot.say(config.channels[0],dribbbleResponse.shots[0].title+": "+dribbbleResponse.shots[0].short_url+" | "+dribbbleResponse.shots[0].image_url);
 				} else {
 					botError();
 				}
