@@ -77,7 +77,7 @@ bot.addListener("message", function(from, to, text, message) {
 	}
 
 	if(text.substr(0,6)=="!help") {
-		bot.say(from, "Hi "+from+"! Here are my commands\n!motd - display the current DN MOTD\n!weather <zip,city,location> - tells you the weather in a location.\n!help - displays this help dialog\n!btc - returns the current bitcoin price\n!feature <feature request> - request a feature for the bot\n!set dribbble <username> - set your dribbble username\n!dribbble - return your most recent followed shot (must of dribbble username set)");
+		bot.say(from, "Hi "+from+"! Here are my commands\n!motd - display the current DN MOTD\n!weather <zip,city,location> - tells you the weather in a location.\n!help - displays this help dialog\n!btc - returns the current bitcoin price\n!feature <feature request> - request a feature for the bot\n!set dribbble <username> - set your dribbble username\n!dribbble - return your most recent followed shot (must have !set dribbble <username> before using)");
 	}
 
 	if(text.substr(0,5)=="!btc") {
