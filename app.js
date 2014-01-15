@@ -77,7 +77,7 @@ bot.addListener("message", function(from, to, text, message) {
 	}
 
 	if(text.substr(0,6)=="!help") {
-		bot.say(from, "Hi "+from+"! Here are my commands\n!motd - display the current DN MOTD\n!weather <zip,city,location> - tells you the weather in a location.\n!help - displays this help dialog\n!btc - returns the current bitcoin price\n!feature <feature request> - request a feature for the bot");
+		bot.say(from, "Hi "+from+"! Here are my commands\n!motd - display the current DN MOTD\n!weather <zip,city,location> - tells you the weather in a location.\n!help - displays this help dialog\n!btc - returns the current bitcoin price\n!feature <feature request> - request a feature for the bot\n!set dribbble <username> - set your dribbble username\n!dribbble - return your most recent followed shot (must of dribbble username set)");
 	}
 
 	if(text.substr(0,5)=="!btc") {
@@ -113,5 +113,38 @@ bot.addListener("message", function(from, to, text, message) {
 		bot.say(from, "Feature request sent!");
 	}
 
+	if(text.substr(0,4)=="!set") {
+		if(text.substr(5,8)=="dribbble") {
+			var currentUser = storage.getItem(from)?storage.getItem(from):"{}";
+			userVars = JSON.parse(currentUser);
+			userVars.dribbble = text.substr(14);
+			storage.setItem(from, JSON.stringify(userVars));
+		}
+	}
 
+	if(text.substr(0,9)=="!dribbble") {
+		var currentUser = storage.getItem(from);
+		userVars = JSON.parse(currentUser);
+		if(!userVars.dribbble) {
+			botError();
+		}
+		var url = "http://api.dribbble.com/players/"+userVars.dribbble+"/shots/following";
+		http.get(url, function(res) {
+			var body = '';
+			res.on('data', function(chunk) {
+				body += chunk;
+			});
+			res.on('end', function() {
+				var dribbbleResponse = JSON.parse(body);
+				if(dribbbleResponse) {
+					bot.say(config.channels[0],dribbbleResponse.shots[0].short_url);
+				} else {
+					botError();
+				}
+			});
+		}).on('error', function(e) {
+			console.log("Got error: ", e);
+		});
+		storage.setItem(from, JSON.stringify(userVars));
+	}
 });
