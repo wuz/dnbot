@@ -170,4 +170,24 @@ bot.addListener("message", function(from, to, text, message) {
 			console.log("Got error: ", e);
 		});
 	}
+
+	if(text.substr(0,4)=="!gif" && text.substr(0,6)!="!gifme") {
+		var giphy2_url = "http://api.giphy.com/v1/gifs/"+encodeURIComponent(text.substr(5))+"?api_key=dc6zaTOxFJmzC";
+		http.get(giphy2_url, function(res) {
+			var body = '';
+			res.on('data', function(chunk) {
+				body += chunk;
+			});
+			res.on('end', function() {
+				var dataResponse = JSON.parse(body);
+				if(dataResponse.data) {
+					bot.say(config.channels[0],dataResponse.data.images.original.url);
+				} else {
+					botError();
+				}
+			});
+		}).on('error', function(e) {
+			console.log("Got error: ", e);
+		});
+	}
 });
