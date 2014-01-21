@@ -120,6 +120,24 @@ bot.addListener("message", function(from, to, text, message) {
 			userVars.dribbble = text.substr(14);
 			storage.setItem(from, JSON.stringify(userVars));
 		}
+		if(text.substr(5,7)=="website") {
+			var currentUser = storage.getItem(from)?storage.getItem(from):"{}";
+			userVars = JSON.parse(currentUser);
+			userVars.website = text.substr(13);
+			storage.setItem(from, JSON.stringify(userVars));
+		}
+	}
+
+	if(text.substr(0,6)=="!whois") {
+		var user = storage.getItem(text.substr(7))?storage.getItem(text.substr(7)):"{}";
+		var userVars = JSON.parse(user);
+		var userIs = text.substr(7)+" is:";
+		for (var key in userVars) {
+			if (userVars.hasOwnProperty(key)) {
+				userIs += "\t"+key+": "+userVars[key];
+			}
+		}
+		bot.say(config.channels[0], userIs)
 	}
 
 	if(text.substr(0,9)=="!dribbble") {
