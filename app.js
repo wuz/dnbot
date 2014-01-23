@@ -126,6 +126,12 @@ bot.addListener("message", function(from, to, text, message) {
 			userVars.website = text.substr(13);
 			storage.setItem(from, JSON.stringify(userVars));
 		}
+		if(text.substr(5,7)=="twitter") {
+			var currentUser = storage.getItem(from)?storage.getItem(from):"{}";
+			userVars = JSON.parse(currentUser);
+			userVars.twitter = text.substr(13);
+			storage.setItem(from, JSON.stringify(userVars));
+		}
 	}
 
 	if(text.substr(0,6)=="!whois") {
@@ -134,7 +140,7 @@ bot.addListener("message", function(from, to, text, message) {
 		var userIs = text.substr(7)+" is:";
 		for (var key in userVars) {
 			if (userVars.hasOwnProperty(key)) {
-				userIs += "\t"+key+": "+userVars[key];
+				userIs += key+": "+userVars[key]+"\n";
 			}
 		}
 		bot.say(config.channels[0], userIs)
