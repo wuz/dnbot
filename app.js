@@ -137,7 +137,7 @@ bot.addListener("message", function(from, to, text, message) {
 	if(text.substr(0,6)=="!whois") {
 		var user = storage.getItem(text.substr(7))?storage.getItem(text.substr(7)):"{}";
 		var userVars = JSON.parse(user);
-		var userIs = text.substr(7)+" is:";
+		var userIs = text.substr(7)+" is:\n";
 		for (var key in userVars) {
 			if (userVars.hasOwnProperty(key)) {
 				userIs += key+": "+userVars[key]+"\n";
