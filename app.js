@@ -30,9 +30,9 @@ var forecast = new Forecast({
 
 
 var config = {
-	channels: ["#DN", "##reddit-gd"],
+	channels: ["#DN"],
 	server: "irc.freenode.net",
-	botName: "R2D2"
+	botName: "artoo"
 };
 
 if(arguments[0] == 'debug') {
@@ -280,4 +280,4 @@ var app = connect()
     res.end('hello world\n');
   });
 
-http.createServer(app).listen(80);
+http.createServer(app).listen(3000);
