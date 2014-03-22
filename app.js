@@ -4,7 +4,8 @@ var Forecast = require('forecast'),
 	cheerio = require('cheerio'),
 	http = require('http'),
 	https = require('https'),
-	storage = require('node-persist');
+	storage = require('node-persist'),
+	connect = require('connect');
 
 storage.initSync();
 
@@ -267,7 +268,16 @@ bot.addListener("message", function(from, to, text, message) {
 	 *
 	 *
 	 *
-	/*
+	*/
 
 
 });
+
+var app = connect()
+  .use(connect.logger('dev'))
+  .use(connect.static('public'))
+  .use(function(req, res){
+    res.end('hello world\n');
+  });
+
+http.createServer(app).listen(80);
