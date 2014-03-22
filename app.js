@@ -82,13 +82,13 @@ bot.addListener("message", function(from, to, text, message) {
 		request(url, function(err, resp, body){
 			$ = cheerio.load(body);
 			bot.say(config.channels[0], "The top repos are:");
-			var strToSay = "";
 			$(".repo-leaderboard-list-item").each(function() {
+				var that = this;
 				setTimeout(function() {
-					strToSay += $(".repository-name .owner-name", this).text()+$(".repository-name .separator", this).text()+$(".repository-name strong", this).text()+": https://github.com"+$(".repository-name", this).attr("href")+"\n";
+					var strToSay = $(".repository-name .owner-name", that).text()+$(".repository-name .separator", that).text()+$(".repository-name strong", that).text()+": https://github.com"+$(".repository-name", that).attr("href");
+						bot.say(config.channels[0], strToSay);
 				}, 1000);
 			});
-			bot.say(config.channels[0], strToSay);
 		});
 	}
 
