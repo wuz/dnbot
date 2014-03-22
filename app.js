@@ -82,16 +82,16 @@ bot.addListener("message", function(from, to, text, message) {
 		request(url, function(err, resp, body){
 			$ = cheerio.load(body);
 			bot.say(config.channels[0], "The top repos are:");
+			var strToSay = "";
 			$(".repo-leaderboard-list-item").each(function() {
-				var strToSay = $(".repository-name .owner-name", this).text()+$(".repository-name .separator", this).text()+$(".repository-name strong", this).text()+": https://github.com"+$(".repository-name", this).attr("href");
-				bot.say(config.channels[0], strToSay);
-			})
-
+				strToSay += $(".repository-name .owner-name", this).text()+$(".repository-name .separator", this).text()+$(".repository-name strong", this).text()+": https://github.com"+$(".repository-name", this).attr("href")+"\n";
+			});
+			bot.say(config.channels[0], strToSay);
 		});
 	}
 
 	if(text.substr(0,6)=="!help") {
-		bot.say(from, "Hi "+from+"! Here are my commands\n!motd - display the current DN MOTD\n!weather <zip,city,location> - tells you the weather in a location.\n!help - displays this help dialog\n!btc - returns the current bitcoin price\n!feature <feature request> - request a feature for the bot\n!set <setting> <option> - set various settings. Options: dribbble <username> - set your dribbble username. website <url> set your personal website.\n!dribbble - return your most recent followed shot (must have !set dribbble <username> before using)\n!gif <id> - get gif by id from Giphy\n!gifme <term> - returns a gif related to the term\n!gifsearch <term> - search for gif id's by term. Returned as PM.\n !whois <user> - return information set by a user with the !set command");
+		bot.say(from, "Hi "+from+"! Here are my commands\n!motd - display the current DN MOTD\n!weather <zip,city,location> - tells you the weather in a location.\n!help - displays this help dialog\n!btc - returns the current bitcoin price\n!feature <feature request> - request a feature for the bot\n!set <setting> <option> - set various settings. Options: dribbble <username> - set your dribbble username. website <url> set your personal website.\n!dribbble - return your most recent followed shot (must have !set dribbble <username> before using)\n!gif <id> - get gif by id from Giphy\n!gifme <term> - returns a gif related to the term\n!gifsearch <term> - search for gif id's by term. Returned as PM.\n !whois <user> - return information set by a user with the !set command\n !8ball <question> - answers your question with an 8ball.\n!github - returns the trending github repos for the week.");
 	}
 
 	if(text.substr(0,5)=="!btc") {
