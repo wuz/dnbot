@@ -29,9 +29,9 @@ var forecast = new Forecast({
 
 
 var config = {
-	channels: ["#DN"],
+	channels: ["#DN", "##reddit-gd"],
 	server: "irc.freenode.net",
-	botName: "DNBOT"
+	botName: "R2D2"
 };
 
 if(arguments[0] == 'debug') {
@@ -259,4 +259,15 @@ bot.addListener("message", function(from, to, text, message) {
 		var arr = ["Try again later.", "The future is cloudy.", "It's not a no.", "Maybe?", "Yes.", "No"];
 		bot.say(config.channels[0], arr[Math.floor(Math.random() * (arr.length + 1))]);
 	}
+
+	/* FEATURE LIST:
+	 * - Remind on entry
+	 * - Remind after time
+	 *
+	 *
+	 *
+	 *
+	/*
+
+
 });
