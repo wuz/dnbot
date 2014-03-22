@@ -30,7 +30,7 @@ var forecast = new Forecast({
 
 
 var config = {
-	channels: ["#DN", "##reddit-gd"],
+	channels: ["#DN"],
 	server: "irc.freenode.net",
 	botName: "DNbot"
 };
