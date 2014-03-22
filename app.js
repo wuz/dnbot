@@ -76,13 +76,17 @@ bot.addListener("message", function(from, to, text, message) {
 		});
 	}
 
-	if(text.substr(0,6)=="!github") {
+	if(text.substr(0,8)=="!github") {
 		var url = 'https://github.com/trending';
 
 		request(url, function(err, resp, body){
 			$ = cheerio.load(body);
-			console.log($);
-			// bot.say(config.channels[0], "DN MOTD: "+$('.MOTDMessageContent p').text().replace(/^\s+|\s+$/g,'')+" "+$('.MOTDCourtesy').text().replace(/^\s+|\s+$/g,''));
+			bot.say(config.channels[0], "The top repos are:");
+			$(".repo-leaderboard-list-item").each(function() {
+				var strToSay = $(".repository-name .owner-name", this).text()+$(".repository-name .separator", this).text()+$(".repository-name strong", this).text()+": https://github.com"+$(".repository-name", this).attr("href");
+				bot.say(config.channels[0], strToSay);
+			})
+
 		});
 	}
 
@@ -246,5 +250,11 @@ bot.addListener("message", function(from, to, text, message) {
 		}).on('error', function(e) {
 			console.log("Got error: ", e);
 		});
+	}
+
+
+	if(text.substr(0,6)=="!8ball") {
+		var arr = ["Try again later.", "The future is cloudy.", "It's not a no.", "Maybe?", "Yes.", "No"];
+		bot.say(config.channels[0], arr[Math.floor(Math.random() * (arr.length + 1))]);
 	}
 });
