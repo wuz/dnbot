@@ -84,7 +84,9 @@ bot.addListener("message", function(from, to, text, message) {
 			bot.say(config.channels[0], "The top repos are:");
 			var strToSay = "";
 			$(".repo-leaderboard-list-item").each(function() {
-				strToSay += $(".repository-name .owner-name", this).text()+$(".repository-name .separator", this).text()+$(".repository-name strong", this).text()+": https://github.com"+$(".repository-name", this).attr("href")+"\n";
+				setTimeout(function() {
+					strToSay += $(".repository-name .owner-name", this).text()+$(".repository-name .separator", this).text()+$(".repository-name strong", this).text()+": https://github.com"+$(".repository-name", this).attr("href")+"\n";
+				}, 1000);
 			});
 			bot.say(config.channels[0], strToSay);
 		});
