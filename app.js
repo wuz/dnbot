@@ -27,8 +27,6 @@ var forecast = new Forecast({
     }
 });
 
-
-
 var config = {
 	channels: ["#DN"],
 	server: "irc.freenode.net",
