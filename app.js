@@ -4,6 +4,7 @@ var Forecast = require('forecast'),
 	cheerio = require('cheerio'),
 	http = require('http'),
 	https = require('https'),
+        google = require('google'),
 	storage = require('node-persist'),
 	connect = require('connect');
 
@@ -74,7 +75,24 @@ bot.addListener("message", function(from, to, text, message) {
 			bot.say(config.channels[0], "DN MOTD: "+$('.MOTDMessageContent p').text().replace(/^\s+|\s+$/g,'')+" "+$('.MOTDCourtesy').text().replace(/^\s+|\s+$/g,''));
 		});
 	}
-
+        if(text.substr(0,2)=="!g") {
+          google.resultsPerPage = 25;
+          var nextCounter = 0;
+          var search = text.substr(3);
+          google(search, function(err, next, links){
+            if (err) console.error(err);
+          
+            for (var i = 0; i < links.length; ++i) {
+                bot.say(config.channels[0], links[i].title + ' - ' + links[i].link); //link.href is an alias for link.link
+              }
+          
+            if (nextCounter < 4) {
+                nextCounter += 1;
+                if (next) next();
+              }
+          
+          });
+        }
 	if(text.substr(0,8)=="!github") {
 		var url = 'https://github.com/trending';
 
@@ -271,7 +289,7 @@ bot.addListener("message", function(from, to, text, message) {
 
 });
 
-var app = connect()
+/*var app = connect()
   .use(connect.logger('dev'))
   .use(connect.static('public'))
   .use(function(req, res){
@@ -279,3 +297,4 @@ var app = connect()
   });
 
 http.createServer(app).listen(3000);
+*/
