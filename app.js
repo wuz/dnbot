@@ -1,19 +1,18 @@
-var Forecast 	= require('forecast'),
-		geocoder 	= require('geocoder'),
-		request 	= require('request'),
-		cheerio 	= require('cheerio'),
-		http 			= require('http'),
-		https 		= require('https'),
-    google 		= require('google'),
-    storage 	= require('node-persist'),
-		connect 	= require('connect');
+var Forecast = require('forecast'),
+	geocoder = require('geocoder'),
+	request = require('request'),
+	cheerio = require('cheerio'),
+	http = require('http'),
+	https = require('https'),
+	google = require('google'),
+	storage = require('node-persist'),
+	connect = require('connect');
 
 storage.initSync();
 
 if(!storage.getItem('featureRequests')) {
 	storage.setItem('featureRequests', "{}");
 }
-
 
 var arguments = process.argv.splice(2);
 
