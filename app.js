@@ -1,4 +1,4 @@
-var Forecast = require('forecast'),
+var forecast = require('forecast'),
 	geocoder = require('geocoder'),
 	request = require('request'),
 	cheerio = require('cheerio'),
@@ -15,23 +15,21 @@ if(!storage.getItem('featureRequests')) {
 
 var arguments = process.argv.splice(2);
 
-var forecast = new Forecast({
+var forecast = new forecast({
   service: 'forecast.io',
   key: 'ec6d3faead4349452c196fe958924eac',
-  units: 'c', // Only the first letter is parsed
-  cache: true,      // Cache API requests?
-  ttl: {           // How long to cache requests. Uses syntax from moment.js: http://momentjs.com/docs/#/durations/creating/
+  units: 'c',   // Only the first letter is parsed
+  cache: true,  // Cache API requests?
+  ttl: {        // How long to cache requests. Uses syntax from moment.js: http://momentjs.com/docs/#/durations/creating/
       minutes: 27,
       seconds: 45
     }
 });
 
-
-
 var config = {
 	channels: ["#DN"],
 	server: "irc.freenode.net",
-	botName: "DNBOT"
+	botName: "TestBot"
 };
 
 if(arguments[0] == 'debug') {
@@ -67,7 +65,7 @@ bot.addListener("message", function(from, to, text, message) {
 		});
 	}
 
-	if(text.substr(0,6)=="!motd") {
+	if(text=="!motd") {
 		var url = 'http://news.layervault.com';
 
 		request(url, function(err, resp, body){
