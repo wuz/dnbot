@@ -1,5 +1,5 @@
-var forecast = require('forecast'),
-	geocoder = require('geocoder'),
+var geocoder = require('geocoder'),
+    forecast = require('forecast'),
 	request = require('request'),
 	cheerio = require('cheerio'),
 	http = require('http'),
@@ -17,46 +17,49 @@ var bot = new irc.Client(config.server, config.botName, {
 	channels:config.channels
 });
 
-
 storage.initSync();
 if(!storage.getItem('featureRequests')) {
-	storage.setItem('featureRequests', "{}");
+  storage.setItem('featureRequests', "{}");
 }
 
+// does this work?
 var arguments = process.argv.splice(2);
 if(arguments[0] == 'debug') {
-	config.channels = ["#bottest"];
+  config.channels = ["#bottest"];
 }
 
 var forecast = new forecast({
-  service: 'forecast.io',
-  key: 'ec6d3faead4349452c196fe958924eac',
-  units: 'c',   // Only the first letter is parsed
-  cache: true,  // Cache API requests?
-  ttl: {        // How long to cache requests. Uses syntax from moment.js: http://momentjs.com/docs/#/durations/creating/
+    service: 'forecast.io',
+    key: 'ec6d3faead4349452c196fe958924eac',
+    units: 'c',
+    cache: true,
+    ttl: {
       minutes: 27,
       seconds: 45
     }
-});
+  });
 
 bot.addListener("message", function(from, to, text, message) {
-	if(from=="conlinism" && text=="!features") {
-		var featureRequests = storage.getItem('featureRequests');
-		bot.say(from, featureRequests);
-	}
+  console.log(from + " => " + to + ": " + text);
 
+  if(text.charAt(0) == "!"){
+    var input = text.split(" ");
+    var key = input[0].slice(1);
 
-	if(text.substr(0,8)=="!weather") {
-		geocoder.geocode(text.substr(9), function ( err, data ) {
-			if(err || !data.results[0]) {
-				botError();
-			}
-			forecast.get([data.results[0].geometry.location.lat, data.results[0].geometry.location.lng], function(err, weather) {
-				bot.say(config.channels[0],
-					"It's currently "+parseInt(weather.currently.temperature, 10)+" degrees and "+weather.currently.summary+" in "+text.substr(9));
-			});
-		});
-	}
+    if(key == "weather"){
+      if(input[1] == undefined){
+        bot.say(config.channels[0], "Please enter a location for the weather");
+      }else{
+        getWeather(input[1]);
+      }
+    }
+  }
+
+  if(from=="conlinism" && text=="!features") {
+      var featureRequests = storage.getItem('featureRequests');
+      bot.say(from, featureRequests);
+  }
+
 
 	if(text=="!motd") {
 		var url = 'http://news.layervault.com';
@@ -233,3 +236,38 @@ function botError() {
 	bot.say(config.channels[0], "I'm sorry Dave, I'm afraid I can't do that...");
 	return false;
 }
+
+/* ------------ */
+/* WEATHER CODE */
+/* ------------ */
+function getWeather(location){
+  geocoder.geocode(location, function(err, res){
+    if(err || res.results[0] == undefined){
+      bot.say(config.channels[0], "Sorry I can't find that location.");
+      return false;
+    } else { var foo = res.results[0].geometry.location; }
+
+    forecast.get([foo.lat, foo.lng], function(error, weather){
+      if(error){
+        bot.say(config.channels[0], "Error fetching weather.");
+        throw new Error(error);
+      }
+
+      var c = Math.floor(weather.currently.temperature),
+          f = Math.floor(celToFah(c));
+      bot.say(config.channels[0], "Weather in " + res.results[0].formatted_address + ": " + weather.currently.summary + " and " + c + "°C/" + f + "°F");
+      bot.say(config.channels[0], weather.hourly.summary);
+    });
+  });
+}
+function celToFah(cel){
+  return ((cel*9)/5)+32;
+}
+
+/* ------------------------------ */
+/* Track connecting to the server */
+/* ------------------------------ */
+console.log("Now connecting...");
+bot.on('registered', function(){
+  console.log("Welcome to freenode!");
+});
