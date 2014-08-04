@@ -4,16 +4,29 @@ var forecast = require('forecast'),
 	cheerio = require('cheerio'),
 	http = require('http'),
 	https = require('https'),
-	storage = require('node-persist');
+	storage = require('node-persist'),
+    irc = require('irc');
+
+var config = {
+	channels: ["#DN"],
+	server: "irc.freenode.net",
+	botName: "DNbot"
+};
+
+var bot = new irc.Client(config.server, config.botName, {
+	channels:config.channels
+});
+
 
 storage.initSync();
-
 if(!storage.getItem('featureRequests')) {
 	storage.setItem('featureRequests', "{}");
 }
 
-
 var arguments = process.argv.splice(2);
+if(arguments[0] == 'debug') {
+	config.channels = ["#bottest"];
+}
 
 var forecast = new forecast({
   service: 'forecast.io',
@@ -25,26 +38,6 @@ var forecast = new forecast({
       seconds: 45
     }
 });
-
-var config = {
-	channels: ["#DN"],
-	server: "irc.freenode.net",
-	botName: "TestBot"
-};
-
-if(arguments[0] == 'debug') {
-	config.channels = ["#bottest"];
-}
-
-var irc = require("irc");
-var bot = new irc.Client(config.server, config.botName, {
-	channels:config.channels
-});
-
-function botError() {
-	bot.say(config.channels[0], "I'm sorry Dave, I'm afraid I can't do that...");
-	return false;
-}
 
 bot.addListener("message", function(from, to, text, message) {
 	if(from=="conlinism" && text=="!features") {
@@ -236,3 +229,7 @@ bot.addListener("message", function(from, to, text, message) {
 		});
 	}
 });
+function botError() {
+	bot.say(config.channels[0], "I'm sorry Dave, I'm afraid I can't do that...");
+	return false;
+}
