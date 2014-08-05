@@ -8,7 +8,7 @@ var geocoder = require('geocoder'),
     irc = require('irc');
 
 var config = {
-	channels: ["#DN"],
+	channels: ["#bottest"],
 	server: "irc.freenode.net",
 	botName: "DNbot"
 };
@@ -28,23 +28,46 @@ if(arguments[0] == 'debug') {
   config.channels = ["#bottest"];
 }
 
-var forecast = new forecast({
-    service: 'forecast.io',
-    key: 'ec6d3faead4349452c196fe958924eac',
-    units: 'c',
-    cache: true,
-    ttl: {
-      minutes: 27,
-      seconds: 45
+
+
+function getMOTD(){
+  request('http://news.layervault.com', function(error, response, body){
+    if(!error && response.statusCode == 200){
+      //console.log(body);
+      var start=body.indexOf("MOTDMessageContent")+20;
+      var end=body.indexOf("</span>", start);
+      var foo=body.substring(start,end);
+      foo = cleanUpHTML(foo);
+      bot.say(config.channels[0], "DN MOTD: " + foo);
     }
   });
+}
+function cleanUpHTML(foo){
+  var content = foo.replace("<p>"," ");
+  content = content.replace("</p>"," ");
+  content = content.replace("</a>"," ");
+  content = content.replace("&#8220;"," ");
+  content = content.replace("&#8221;"," ");
+  var start = content.indexOf("<a");
+  var end = content.indexOf(">", start)+1;
+  var aTag = content.substring(start,end);
+  content = content.replace(aTag, "");
+  return content.trim();
+}
+/*
+    request(url, function(err, resp, body){
+        $ = cheerio.load(body);
+        bot.say(config.channels[0], "DN MOTD: "+$('.MOTDMessageContent p').text().replace(/^\s+|\s+$/g,'')+" "+$('.MOTDCourtesy').text().replace(/^\s+|\s+$/g,''));
+    });
+}
+*/
 
-bot.addListener("message", function(from, to, text, message) {
+bot.on("message", function(from, to, text, message) {
   console.log(from + " => " + to + ": " + text);
 
   if(text.charAt(0) == "!"){
     var input = text.split(" ");
-    var key = input[0].slice(1);
+    var key = input[0].slice(1).toLowerCase();
 
     if(key == "weather"){
       if(input[1] == undefined){
@@ -52,6 +75,9 @@ bot.addListener("message", function(from, to, text, message) {
       }else{
         getWeather(input[1]);
       }
+    }
+    if(key == "motd"){
+      getMOTD();
     }
   }
 
@@ -61,14 +87,7 @@ bot.addListener("message", function(from, to, text, message) {
   }
 
 
-	if(text=="!motd") {
-		var url = 'http://news.layervault.com';
 
-		request(url, function(err, resp, body){
-			$ = cheerio.load(body);
-			bot.say(config.channels[0], "DN MOTD: "+$('.MOTDMessageContent p').text().replace(/^\s+|\s+$/g,'')+" "+$('.MOTDCourtesy').text().replace(/^\s+|\s+$/g,''));
-		});
-	}
 
 	if(text.substr(0,6)=="!help") {
 		bot.say(from, "Hi "+from+"! Here are my commands\n!motd - display the current DN MOTD\n!weather <zip,city,location> - tells you the weather in a location.\n!help - displays this help dialog\n!btc - returns the current bitcoin price\n!feature <feature request> - request a feature for the bot\n!set <setting> <option> - set various settings. Options: dribbble <username> - set your dribbble username. website <url> set your personal website.\n!dribbble - return your most recent followed shot (must have !set dribbble <username> before using)\n!gif <id> - get gif by id from Giphy\n!gifme <term> - returns a gif related to the term\n!gifsearch <term> - search for gif id's by term. Returned as PM.\n !whois <user> - return information set by a user with the !set command");
@@ -240,6 +259,16 @@ function botError() {
 /* ------------ */
 /* WEATHER CODE */
 /* ------------ */
+var forecast = new forecast({
+  service: 'forecast.io',
+  key: 'ec6d3faead4349452c196fe958924eac',
+  units: 'c',
+  cache: true,
+  ttl: {
+    minutes: 27,
+    seconds: 45
+  }
+});
 function getWeather(location){
   geocoder.geocode(location, function(err, res){
     if(err || res.results[0] == undefined){
