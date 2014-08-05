@@ -1,0 +1,2 @@
+jailbot => !weather (20:55:29 GMT-0500 (CDT))
+jailbot => !weather chicago (20:55:43 GMT-0500 (CDT))

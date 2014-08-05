@@ -28,12 +28,22 @@ if(arguments[0] == 'debug') {
   config.channels = ["#bottest"];
 }
 
-function setHelp(){
+function resetLogs(){
+  fs.writeFile('logs.txt', "");
+}
+function getLogs(){
 
 }
+function setLog(foo, bar){
+  var time = new Date().toTimeString();
+  var logMsg = foo + " => " + bar + " (" + time + ")\n";
+  fs.appendFile("logs.txt", logMsg, function(error){
+    if (error) throw error;
+  });
+}
+
 bot.on("message", function(from, to, text, message) {
-  fs.writeFile("logs.txt", "Hello World");
-  console.log(from + " => " + to + ": " + text);
+  setLog(from, text);
 
   if(text.charAt(0) == "!"){
     var input = text.split(" ");
@@ -293,4 +303,5 @@ function celToFah(cel){
 console.log("Now connecting...");
 bot.on('registered', function(){
   console.log("Welcome to freenode!");
+  resetLogs();
 });
