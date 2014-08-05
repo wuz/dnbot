@@ -1,11 +1,11 @@
 var geocoder = require('geocoder'),
     forecast = require('forecast'),
 	request = require('request'),
-	cheerio = require('cheerio'),
 	http = require('http'),
 	https = require('https'),
 	storage = require('node-persist'),
-    irc = require('irc');
+    irc = require('irc'),
+    fs = require('fs');
 
 var config = {
 	channels: ["#bottest"],
@@ -28,41 +28,11 @@ if(arguments[0] == 'debug') {
   config.channels = ["#bottest"];
 }
 
+function setHelp(){
 
-
-function getMOTD(){
-  request('http://news.layervault.com', function(error, response, body){
-    if(!error && response.statusCode == 200){
-      //console.log(body);
-      var start=body.indexOf("MOTDMessageContent")+20;
-      var end=body.indexOf("</span>", start);
-      var foo=body.substring(start,end);
-      foo = cleanUpHTML(foo);
-      bot.say(config.channels[0], "DN MOTD: " + foo);
-    }
-  });
 }
-function cleanUpHTML(foo){
-  var content = foo.replace("<p>"," ");
-  content = content.replace("</p>"," ");
-  content = content.replace("</a>"," ");
-  content = content.replace("&#8220;"," ");
-  content = content.replace("&#8221;"," ");
-  var start = content.indexOf("<a");
-  var end = content.indexOf(">", start)+1;
-  var aTag = content.substring(start,end);
-  content = content.replace(aTag, "");
-  return content.trim();
-}
-/*
-    request(url, function(err, resp, body){
-        $ = cheerio.load(body);
-        bot.say(config.channels[0], "DN MOTD: "+$('.MOTDMessageContent p').text().replace(/^\s+|\s+$/g,'')+" "+$('.MOTDCourtesy').text().replace(/^\s+|\s+$/g,''));
-    });
-}
-*/
-
 bot.on("message", function(from, to, text, message) {
+  fs.writeFile("logs.txt", "Hello World");
   console.log(from + " => " + to + ": " + text);
 
   if(text.charAt(0) == "!"){
@@ -75,9 +45,12 @@ bot.on("message", function(from, to, text, message) {
       }else{
         getWeather(input[1]);
       }
-    }
-    if(key == "motd"){
+    } else if(key == "motd" || key == "dnmotd"){
       getMOTD();
+    } else if(key == "help"){
+      getHelp(from);
+    } else if(key == "btc"){
+      getBtc();
     }
   }
 
@@ -85,33 +58,6 @@ bot.on("message", function(from, to, text, message) {
       var featureRequests = storage.getItem('featureRequests');
       bot.say(from, featureRequests);
   }
-
-
-
-
-	if(text.substr(0,6)=="!help") {
-		bot.say(from, "Hi "+from+"! Here are my commands\n!motd - display the current DN MOTD\n!weather <zip,city,location> - tells you the weather in a location.\n!help - displays this help dialog\n!btc - returns the current bitcoin price\n!feature <feature request> - request a feature for the bot\n!set <setting> <option> - set various settings. Options: dribbble <username> - set your dribbble username. website <url> set your personal website.\n!dribbble - return your most recent followed shot (must have !set dribbble <username> before using)\n!gif <id> - get gif by id from Giphy\n!gifme <term> - returns a gif related to the term\n!gifsearch <term> - search for gif id's by term. Returned as PM.\n !whois <user> - return information set by a user with the !set command");
-	}
-
-	if(text.substr(0,5)=="!btc") {
-		var url = "https://coinbase.com/api/v1/prices/spot_rate";
-		https.get(url, function(res) {
-			var body = '';
-			res.on('data', function(chunk) {
-				body += chunk;
-			});
-			res.on('end', function() {
-				var btcResponse = JSON.parse(body);
-				if(btcResponse) {
-					bot.say(config.channels[0],"The bitcoin price is "+btcResponse.amount+" "+btcResponse.currency);
-				} else {
-					botError();
-				}
-			});
-		}).on('error', function(e) {
-			console.log("Got error: ", e);
-		});
-	}
 
 	if(text.substr(0,8)=="!feature" && text.substr(0,9)!="!features") {
 		console.log("Feature Request!");
@@ -254,6 +200,54 @@ bot.on("message", function(from, to, text, message) {
 function botError() {
 	bot.say(config.channels[0], "I'm sorry Dave, I'm afraid I can't do that...");
 	return false;
+}
+
+/* ----------------- */
+/* Send bot commands */
+/* ----------------- */
+function getHelp(user){
+  bot.say(user, "Hi " + user + "! Here are my commands\n!motd - display the current DN MOTD\n!weather <zip,city,location> - tells you the weather in a location.\n!help - displays this help dialog\n!btc - returns the current bitcoin price\n!feature <feature request> - request a feature for the bot\n!set <setting> <option> - set various settings. Options: dribbble <username> - set your dribbble username. website <url> set your personal website.\n!dribbble - return your most recent followed shot (must have !set dribbble <username> before using)\n!gif <id> - get gif by id from Giphy\n!gifme <term> - returns a gif related to the term\n!gifsearch <term> - search for gif id's by term. Returned as PM.\n !whois <user> - return information set by a user with the !set command");
+}
+
+/* ------------------ */
+/* Find bitcoin price */
+/* ------------------ */
+function getBtc(){
+  request('https://coinbase.com/api/v1/prices/spot_rate', function(error, response, body){
+     if(!error && response.statusCode == 200){
+       var btc = JSON.parse(body);
+       bot.say(config.channels[0], "The price of bitcoin is " + btc.amount +" "+ btc.currency);
+     }
+  });
+}
+
+/* -------------------------------- */
+/* Designer News Message of the Day */
+/* -------------------------------- */
+function getMOTD(){
+  request('http://news.layervault.com', function(error, response, body){
+    if(!error && response.statusCode == 200){
+      //console.log(body);
+      var start=body.indexOf("MOTDMessageContent")+20;
+      var end=body.indexOf("</span>", start);
+      var foo=body.substring(start,end);
+      foo = cleanUpHTML(foo);
+      bot.say(config.channels[0], "DN MOTD: " + foo);
+    }
+  });
+}
+function cleanUpHTML(foo){
+  // trying to avoid regular expresions
+  var content = foo.replace("<p>"," ");
+  content = content.replace("</p>"," ");
+  content = content.replace("</a>"," ");
+  content = content.replace("&#8220;"," ");
+  content = content.replace("&#8221;"," ");
+  var start = content.indexOf("<a");
+  var end = content.indexOf(">", start)+1;
+  var aTag = content.substring(start,end);
+  content = content.replace(aTag, "");
+  return content.trim();
 }
 
 /* ------------ */
