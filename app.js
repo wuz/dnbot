@@ -1,3 +1,14 @@
+// Chat bot for #DN on irc.freenode.net
+//
+// TODO:
+// 1. Feature requests
+// 2. Gifs
+// 3. dnbot response array
+//
+// DOING:
+// 1. Chat logs
+// 2. !whois
+
 var irc = require('irc'),
     geocoder = require('geocoder'),
     forecast = require('forecast'),
@@ -9,13 +20,22 @@ var irc = require('irc'),
     mongoose = require('mongoose'),
     format = require('util').format;
 
+var config = {
+    channels: ["#bottest"],
+    server: "irc.freenode.net",
+    botName: "DNbot"
+};
+
+/* ---------------------- */
+/* Database configuration */
+/* ---------------------- */
 mongoose.connect('mongodb://localhost/test');
 var db = mongoose.connection;
 
-db.on('error', console.error.bind(console, 'connection error:'));
 db.once('open', function callback (){
-  console.log("MongoDB connected!")
+  console.log("Database established.")
 });
+db.on('error', console.error.bind(console, 'connection error:'));
 
 var userSchema = mongoose.Schema({
   name: String,
@@ -27,54 +47,34 @@ var userSchema = mongoose.Schema({
 });
 var User = mongoose.model('User', userSchema);
 
-/* Method for the Schema
-userSchema.methods.speak = function(){
-  var greeting = this.name ? "Meow name is " + this.name : "I don't have a name :(";
-  console.log(greeting);
-}
-*/
 
-
-var clark = new User({name: 'Jailbot',
-                     social: {
-                       twitter: "@bigrayarea",
-                       website: "clarknelson.me",
-                       dribble: "hi"
-                     }});
-var james = new User({name: 'James'});
-clark.save(function(err, data){ if (err) return console.log(err); });
-james.save(function(err, data){ if (err) return console.log(err); });
-User.find(function(err, users){
-  if (err) return console.error(err);
-  console.log(users);
-});
-
-/*
-var fluffy = new Kitten({ name: 'fluffy' });
-fluffy.save(function(err, fluffy){
-  if (err) return console.error(err);
-});
-Kitten.find(function(err, kittens){
-  if (err) return console.error(err);
-  console.log(kittens);
-});
-*/
-var config = {
-    channels: ["#bottest"],
-    server: "irc.freenode.net",
-    botName: "DNbot"
-};
-
+// Initialize bot
 var bot = new irc.Client(config.server, config.botName, {
     channels:config.channels
 });
 
-// does this work?
-var arguments = process.argv.splice(2);
-if(arguments[0] == 'debug') {
-  config.channels = ["#bottest"];
-}
 
+// Checks user for first visit
+// Work in progress
+bot.on('join#bottest', function(nick, message){
+  var user = nick.toLowerCase();
+
+  User.findOne({'name': user }, function(err, person){
+    if (err) return handleError(err);
+    if(person == null){
+      var newUser = new User({name: user});
+      bot.say(nick, 'Welcome to the Designer News chatroom ' + nick + "!");
+
+      // newUser.save(function(err, data){ if (err) return console.log(err); });
+    } else {
+      console.log("welcome back!");
+    }
+    console.log(person);
+  })
+});
+
+// Log files
+// Work in progress
 function resetLogs(){
   fs.writeFile('logs.txt', "");
 }
@@ -90,10 +90,9 @@ function setLog(foo, bar){
 }
 
 bot.on("message", function(from, to, text, message) {
-  setLog(from, text);
+  var input = text.split(" ");
 
   if(text.charAt(0) == "!"){
-    var input = text.split(" ");
     var key = input[0].slice(1).toLowerCase();
 
     if(key == "weather"){
@@ -108,96 +107,11 @@ bot.on("message", function(from, to, text, message) {
       getHelp(from);
     } else if(key == "btc"){
       getBtc();
+    } else if(key == 'choose'){
+      choose(input);
     }
   }
-/*
-  if(from=="conlinism" && text=="!features") {
-      var featureRequests = storage.getItem('featureRequests');
-      bot.say(from, featureRequests);
-  }
-*/
-/*
-	if(text.substr(0,8)=="!feature" && text.substr(0,9)!="!features") {
-		console.log("Feature Request!");
-		var current = storage.getItem('featureRequests');
-
-
-		var existFeatureRequests = JSON.parse(current);
-
-		existFeatureRequests[Math.floor(Math.random() * (1000 - 1) + 1)+"-"+from] = text.substr(9);
-
-		storage.setItem('featureRequests', JSON.stringify(existFeatureRequests));
-		bot.say(from, "Feature request sent!");
-	}
-*/
-/*
-storage.initSync();
-if(!storage.getItem('featureRequests')) {
-  storage.setItem('featureRequests', "{}");
-}
-*/
-/*
-	if(text.substr(0,4)=="!set") {
-		if(text.substr(5,8)=="dribbble") {
-			var currentUser = storage.getItem(from)?storage.getItem(from):"{}";
-			userVars = JSON.parse(currentUser);
-			userVars.dribbble = text.substr(14);
-			storage.setItem(from, JSON.stringify(userVars));
-		}
-		if(text.substr(5,7)=="website") {
-			var currentUser = storage.getItem(from)?storage.getItem(from):"{}";
-			userVars = JSON.parse(currentUser);
-			userVars.website = text.substr(13);
-			storage.setItem(from, JSON.stringify(userVars));
-		}
-		if(text.substr(5,7)=="twitter") {
-			var currentUser = storage.getItem(from)?storage.getItem(from):"{}";
-			userVars = JSON.parse(currentUser);
-			userVars.twitter = text.substr(13);
-			storage.setItem(from, JSON.stringify(userVars));
-		}
-	}
-*/
-	if(text.substr(0,6)=="!whois") {
-		//var user = storage.getItem(text.substr(7))?storage.getItem(text.substr(7)):"{}";
-		var userVars = JSON.parse(user);
-		var userIs = text.substr(7)+" is:\n";
-		for (var key in userVars) {
-			if (userVars.hasOwnProperty(key)) {
-				userIs += key+": "+userVars[key]+"\n";
-			}
-		}
-		bot.say(config.channels[0], userIs)
-	}
-
-	if(text.substr(0,9)=="!dribbble") {
-		//var currentUser = storage.getItem(from);
-		userVars = JSON.parse(currentUser);
-		if(!userVars.dribbble) {
-			botError();
-		}
-		var url = "http://api.dribbble.com/players/"+userVars.dribbble+"/shots/following";
-		http.get(url, function(res) {
-			var body = '';
-			res.on('data', function(chunk) {
-				body += chunk;
-			});
-			res.on('end', function() {
-				var dribbbleResponse = JSON.parse(body);
-				if(dribbbleResponse) {
-					bot.say(config.channels[0],dribbbleResponse.shots[0].title+": "+dribbbleResponse.shots[0].short_url+" | "+dribbbleResponse.shots[0].image_url);
-				} else {
-					botError();
-				}
-			});
-		}).on('error', function(e) {
-			console.log("Got error: ", e);
-		});
-	}
-
-	if(text.substr(0,5)=="!nick") {
-		bot.say(config.channels[0], "/nick DNBOT1");
-	}
+  pingTheBot(input);
 
 	if(text.substr(0,6)=="!gifme") {
 		var giphy_url = "http://api.giphy.com/v1/gifs/random?api_key=dc6zaTOxFJmzC&tag="+encodeURIComponent(text.substr(6));
@@ -262,9 +176,33 @@ if(!storage.getItem('featureRequests')) {
 		});
 	}
 });
+
 function botError() {
 	bot.say(config.channels[0], "I'm sorry Dave, I'm afraid I can't do that...");
 	return false;
+}
+
+/* ------------------ */
+/* Chooses one option */
+/* ------------------ */
+function choose(words){
+  words.shift();
+  var count = words.length;
+  var answer = Math.floor(Math.random()*count);
+  bot.say(config.channels[0], words[answer]);
+  return words[answer];
+}
+/* ---------------------- */
+/* Returns funny messages */
+/* when you ping dnbot    */
+/* Needs a message array  */
+/* ---------------------- */
+function pingTheBot(words){
+  words.forEach(function(word){
+    if(word=="dnbot"){
+      bot.action(config.channels[0], 'does a backflip');
+    }
+  });
 }
 
 /* ----------------- */
@@ -316,7 +254,7 @@ function cleanUpHTML(foo){
 }
 
 /* ------------ */
-/* WEATHER CODE */
+/* Weather Code */
 /* ------------ */
 var forecast = new forecast({
   service: 'forecast.io',
