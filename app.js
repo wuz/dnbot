@@ -1,26 +1,73 @@
-var geocoder = require('geocoder'),
+var irc = require('irc'),
+    geocoder = require('geocoder'),
     forecast = require('forecast'),
-	request = require('request'),
-	http = require('http'),
-	https = require('https'),
-	storage = require('node-persist'),
-    irc = require('irc'),
-    fs = require('fs');
+    request = require('request'),
+    http = require('http'),
+    https = require('https'),
+    fs = require('fs'),
+    MongoClient = require('mongodb').MongoClient,
+    mongoose = require('mongoose'),
+    format = require('util').format;
 
+mongoose.connect('mongodb://localhost/test');
+var db = mongoose.connection;
+
+db.on('error', console.error.bind(console, 'connection error:'));
+db.once('open', function callback (){
+  console.log("MongoDB connected!")
+});
+
+var userSchema = mongoose.Schema({
+  name: String,
+  social:{
+    twitter: String,
+    website: String,
+    dribble: String
+  }
+});
+var User = mongoose.model('User', userSchema);
+
+/* Method for the Schema
+userSchema.methods.speak = function(){
+  var greeting = this.name ? "Meow name is " + this.name : "I don't have a name :(";
+  console.log(greeting);
+}
+*/
+
+
+var clark = new User({name: 'Jailbot',
+                     social: {
+                       twitter: "@bigrayarea",
+                       website: "clarknelson.me",
+                       dribble: "hi"
+                     }});
+var james = new User({name: 'James'});
+clark.save(function(err, data){ if (err) return console.log(err); });
+james.save(function(err, data){ if (err) return console.log(err); });
+User.find(function(err, users){
+  if (err) return console.error(err);
+  console.log(users);
+});
+
+/*
+var fluffy = new Kitten({ name: 'fluffy' });
+fluffy.save(function(err, fluffy){
+  if (err) return console.error(err);
+});
+Kitten.find(function(err, kittens){
+  if (err) return console.error(err);
+  console.log(kittens);
+});
+*/
 var config = {
-	channels: ["#bottest"],
-	server: "irc.freenode.net",
-	botName: "DNbot"
+    channels: ["#bottest"],
+    server: "irc.freenode.net",
+    botName: "DNbot"
 };
 
 var bot = new irc.Client(config.server, config.botName, {
-	channels:config.channels
+    channels:config.channels
 });
-
-storage.initSync();
-if(!storage.getItem('featureRequests')) {
-  storage.setItem('featureRequests', "{}");
-}
 
 // does this work?
 var arguments = process.argv.splice(2);
@@ -63,12 +110,13 @@ bot.on("message", function(from, to, text, message) {
       getBtc();
     }
   }
-
+/*
   if(from=="conlinism" && text=="!features") {
       var featureRequests = storage.getItem('featureRequests');
       bot.say(from, featureRequests);
   }
-
+*/
+/*
 	if(text.substr(0,8)=="!feature" && text.substr(0,9)!="!features") {
 		console.log("Feature Request!");
 		var current = storage.getItem('featureRequests');
@@ -81,7 +129,14 @@ bot.on("message", function(from, to, text, message) {
 		storage.setItem('featureRequests', JSON.stringify(existFeatureRequests));
 		bot.say(from, "Feature request sent!");
 	}
-
+*/
+/*
+storage.initSync();
+if(!storage.getItem('featureRequests')) {
+  storage.setItem('featureRequests', "{}");
+}
+*/
+/*
 	if(text.substr(0,4)=="!set") {
 		if(text.substr(5,8)=="dribbble") {
 			var currentUser = storage.getItem(from)?storage.getItem(from):"{}";
@@ -102,9 +157,9 @@ bot.on("message", function(from, to, text, message) {
 			storage.setItem(from, JSON.stringify(userVars));
 		}
 	}
-
+*/
 	if(text.substr(0,6)=="!whois") {
-		var user = storage.getItem(text.substr(7))?storage.getItem(text.substr(7)):"{}";
+		//var user = storage.getItem(text.substr(7))?storage.getItem(text.substr(7)):"{}";
 		var userVars = JSON.parse(user);
 		var userIs = text.substr(7)+" is:\n";
 		for (var key in userVars) {
@@ -116,7 +171,7 @@ bot.on("message", function(from, to, text, message) {
 	}
 
 	if(text.substr(0,9)=="!dribbble") {
-		var currentUser = storage.getItem(from);
+		//var currentUser = storage.getItem(from);
 		userVars = JSON.parse(currentUser);
 		if(!userVars.dribbble) {
 			botError();
