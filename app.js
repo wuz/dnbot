@@ -9,6 +9,8 @@
 // 7. !tell
 // 8. youtube titles
 // 9. get real gif api key
+// 10. !seen
+// 11. !twitter = your last tweet
 //
 // DOING:
 // 1. Chat logs
@@ -44,12 +46,17 @@ db.on('error', console.error.bind(console, 'connection error:'));
 
 var userSchema = mongoose.Schema({
   name: String,
+  first_seen: Date,
+  last_seen: Date,
   social:{
     twitter: String,
     website: String,
     dribble: String
   },
-  favorite_gif: String
+  favorite_gif: String,
+  points: Number,
+  points_left: Number,
+  quotes: Array
 });
 var User = mongoose.model('User', userSchema);
 
@@ -69,7 +76,8 @@ bot.on('join#bottest', function(nick, message){
 
     if(person == null){
       welcomeMessage(nick);
-      var newUser = new User({name: user});
+      var date = new Date();
+      var newUser = new User({name: user, first_seen: date, points_left: 1});
       newUser.save(function(err, data){ if (err) return console.log(err); });
       console.log("New user: " + user + "!");
     } else {
@@ -102,6 +110,7 @@ function setFavGif(user, gif){
     console.log(person);
   });
 }
+
 bot.on("message", function(from, to, text, message) {
   setLog(from, text);
   var input = text.split(" ");
@@ -126,9 +135,11 @@ bot.on("message", function(from, to, text, message) {
     } else if(key == 'gifme'){
       findGif(input);
     } else if(key == 'trending'){
-      trendingGifs();
+      trendingGif();
     } else if(key == 'setgif'){
       setFavGif(from, input[1]);
+    } else if(key == 'twitter'){
+      twitter(from, input);
     }
   }
   pingTheBot(input);
@@ -152,9 +163,39 @@ function welcomeMessage(user){
   bot.say(user, 'Access any of this information again by typing !aboutme or !whois [user].');
   bot.say(user, 'For more bot commands, please type !help');
 }
+
 /* ------------------------- */
-/* Find random gif with tags */
+/* Find and set twitter info */
 /* ------------------------- */
+function twitter(user, args){
+  if(args[1] == undefined){
+    User.findOne({'name':user}, function(err,person){
+      if (err) return handleError(err);
+      bot.say(config.channels[0], person.social.twitter);
+    });
+  } else if (args[1] == "add") {
+    User.findOne({'name':user}, function(err,person){
+      if (err) return handleError(err);
+      person.social.twitter = args[2];
+      person.save(function(err, data){
+        if (err) return handleError(err);
+        bot.say(config.channels[0], "Your twitter handle is now " + args[2]);
+      });
+    });
+  } else {
+    User.findOne({'name':args[1]}, function(err, person){
+      if (err) return handleError(err);
+      if(person != null){
+        bot.say(config.channels[0], args[1]+"'s twitter handle is "+person.social.twitter);
+      } else {
+        bot.say(config.channels[0], "Sorry I can't find that user.");
+      }
+    });
+  }
+}
+/* --------------- */
+/* Find random gif */
+/* --------------- */
 function findGif(words){
   words.shift();
   var input = words.join("+");
@@ -171,7 +212,7 @@ function findGif(words){
       var data = JSON.parse(body);
 
       if (input == ""){
-        trendingGifs();
+        trendingGif();
       } else {
         if(data.data.image_url == undefined){
           bot.say(config.channels[0], "No results.");
@@ -188,7 +229,7 @@ function findGif(words){
 /* -------------------------- */
 /* Get one gif of the top 100 */
 /* -------------------------- */
-function trendingGifs(){
+function trendingGif(){
   http.get("http://api.giphy.com/v1/gifs/trending?api_key=dc6zaTOxFJmzC&limit=100", function(res){
     var body = '';
     var rand = Math.floor(Math.random()*100)-1;
