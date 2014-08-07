@@ -2,12 +2,18 @@
 //
 // TODO:
 // 1. Feature requests
-// 2. Gifs
 // 3. dnbot response array
+// 4. vines
+// 5. !whois
+// 6. !help
+// 7. !tell
+// 8. youtube titles
+// 9. get real gif api key
 //
 // DOING:
 // 1. Chat logs
-// 2. !whois
+// 2. !twitter
+// 3. gifs
 
 var irc = require('irc'),
     geocoder = require('geocoder'),
@@ -48,6 +54,7 @@ var userSchema = mongoose.Schema({
 var User = mongoose.model('User', userSchema);
 
 
+
 // Initialize bot
 var bot = new irc.Client(config.server, config.botName, {
     channels:config.channels
@@ -55,21 +62,19 @@ var bot = new irc.Client(config.server, config.botName, {
 
 
 // Checks user for first visit
-// Work in progress
 bot.on('join#bottest', function(nick, message){
   var user = nick.toLowerCase();
-
   User.findOne({'name': user }, function(err, person){
     if (err) return handleError(err);
-    if(person == null){
-      var newUser = new User({name: user});
-      bot.say(nick, 'Welcome to the Designer News chatroom ' + nick + "!");
 
-      // newUser.save(function(err, data){ if (err) return console.log(err); });
+    if(person == null){
+      welcomeMessage(nick);
+      var newUser = new User({name: user});
+      newUser.save(function(err, data){ if (err) return console.log(err); });
+      console.log("New user: " + user + "!");
     } else {
-      console.log("welcome back!");
+      console.log("Welcome back " + user + "!");
     }
-    console.log(person);
   })
 });
 
@@ -83,13 +88,15 @@ function getLogs(){
 }
 function setLog(foo, bar){
   var time = new Date().toTimeString();
-  var logMsg = foo + " => " + bar + " (" + time + ")\n";
+  var logMsg = time + ": " + foo + " => " + bar + "\n";
   fs.appendFile("logs.txt", logMsg, function(error){
     if (error) throw error;
   });
 }
 
 bot.on("message", function(from, to, text, message) {
+  setLog(from, text);
+
   var input = text.split(" ");
 
   if(text.charAt(0) == "!"){
@@ -109,30 +116,14 @@ bot.on("message", function(from, to, text, message) {
       getBtc();
     } else if(key == 'choose'){
       choose(input);
+    } else if(key == 'gifme'){
+      findGif(input);
     }
   }
   pingTheBot(input);
 
-	if(text.substr(0,6)=="!gifme") {
-		var giphy_url = "http://api.giphy.com/v1/gifs/random?api_key=dc6zaTOxFJmzC&tag="+encodeURIComponent(text.substr(6));
-		http.get(giphy_url, function(res) {
-			var body = '';
-			res.on('data', function(chunk) {
-				body += chunk;
-			});
-			res.on('end', function() {
-				var dataResponse = JSON.parse(body);
-				if(dataResponse) {
-					bot.say(config.channels[0],dataResponse.data.image_original_url);
-				} else {
-					botError();
-				}
-			});
-		}).on('error', function(e) {
-			console.log("Got error: ", e);
-		});
-	}
 
+/*
 	if(text.substr(0,10)=="!gifsearch") {
 		var giphy_url = "http://api.giphy.com/v1/gifs/search?api_key=dc6zaTOxFJmzC&q="+encodeURIComponent(text.substr(11))+"&limit=10";
 		http.get(giphy_url, function(res) {
@@ -155,7 +146,8 @@ bot.on("message", function(from, to, text, message) {
 			console.log("Got error: ", e);
 		});
 	}
-
+*/
+/*
 	if(text.substr(0,4)=="!gif" && text.substr(0,6)!="!gifme" && text.substr(0,10)!="!gifsearch") {
 		var giphy2_url = "http://api.giphy.com/v1/gifs/"+encodeURIComponent(text.substr(5))+"?api_key=dc6zaTOxFJmzC";
 		http.get(giphy2_url, function(res) {
@@ -175,6 +167,7 @@ bot.on("message", function(from, to, text, message) {
 			console.log("Got error: ", e);
 		});
 	}
+*/
 });
 
 function botError() {
@@ -182,6 +175,44 @@ function botError() {
 	return false;
 }
 
+/* ------------------------- */
+/* Introduce user to channel */
+/* ------------------------- */
+function welcomeMessage(user){
+  bot.say(user, 'Welcome to the Designer News chatroom ' + user + "! Be sure to set up your info so we can network online.");
+  bot.say(user, ' ');
+  bot.say(user, 'Type !twitter [@handle] to add your twitter handle.');
+  bot.say(user, 'Type !dribble [profile | https://dribble.com/profile] to add your dribble profile.');
+  bot.say(user, 'Type !website [https://news.layervault.com/] to add your personal site.');
+  bot.say(user, ' ');
+  bot.say(user, 'Access any of this information again by typing !aboutme or !whois [user].');
+  bot.say(user, 'For more bot commands, please type !help');
+}
+/* ------------------------- */
+/* Find random gif with tags */
+/* ------------------------- */
+function findGif(words){
+  words.shift();
+  var input = words.join("+");
+  var url = "http://api.giphy.com/v1/gifs/random?api_key=dc6zaTOxFJmzC&tag=" + input;
+  http.get(url, function(res){
+    var body = '';
+    res.on('data', function(chunk){
+      body += chunk;
+    });
+    res.on('end', function(){
+      var data = JSON.parse(body);
+      var tags = data.data.tags.join(", ");
+
+      if(data.data.image_url == undefined){
+        bot.say(config.channels[0], "No results.");
+      } else {
+        bot.say(config.channels[0], data.data.image_url);
+        bot.say(config.channels[0], tags);
+      }
+    });
+  });
+}
 /* ------------------ */
 /* Chooses one option */
 /* ------------------ */
@@ -204,14 +235,12 @@ function pingTheBot(words){
     }
   });
 }
-
 /* ----------------- */
 /* Send bot commands */
 /* ----------------- */
 function getHelp(user){
   bot.say(user, "Hi " + user + "! Here are my commands\n!motd - display the current DN MOTD\n!weather <zip,city,location> - tells you the weather in a location.\n!help - displays this help dialog\n!btc - returns the current bitcoin price\n!feature <feature request> - request a feature for the bot\n!set <setting> <option> - set various settings. Options: dribbble <username> - set your dribbble username. website <url> set your personal website.\n!dribbble - return your most recent followed shot (must have !set dribbble <username> before using)\n!gif <id> - get gif by id from Giphy\n!gifme <term> - returns a gif related to the term\n!gifsearch <term> - search for gif id's by term. Returned as PM.\n !whois <user> - return information set by a user with the !set command");
 }
-
 /* ------------------ */
 /* Find bitcoin price */
 /* ------------------ */
@@ -223,7 +252,6 @@ function getBtc(){
      }
   });
 }
-
 /* -------------------------------- */
 /* Designer News Message of the Day */
 /* -------------------------------- */
@@ -252,7 +280,6 @@ function cleanUpHTML(foo){
   content = content.replace(aTag, "");
   return content.trim();
 }
-
 /* ------------ */
 /* Weather Code */
 /* ------------ */
@@ -289,7 +316,6 @@ function getWeather(location){
 function celToFah(cel){
   return ((cel*9)/5)+32;
 }
-
 /* ------------------------------ */
 /* Track connecting to the server */
 /* ------------------------------ */
