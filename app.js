@@ -11,10 +11,11 @@
 // 9. get real gif api key
 // 10. !seen
 // 11. !twitter = your last tweet
+// 12. add dnbot ping message array
+// 13. imdb
 //
 // DOING:
 // 1. Chat logs
-// 2. !twitter
 
 var irc = require('irc'),
     geocoder = require('geocoder'),
@@ -140,6 +141,10 @@ bot.on("message", function(from, to, text, message) {
       setFavGif(from, input[1]);
     } else if(key == 'twitter'){
       twitter(from, input);
+    } else if(key == 'dribble'){
+      dribble(from, input);
+    } else if(key == 'website'){
+      website(from, input);
     }
   }
   pingTheBot(input);
@@ -157,13 +162,70 @@ function welcomeMessage(user){
   bot.say(user, 'Welcome to the Designer News chatroom ' + user + "! Be sure to set up your info so we can network online.");
   bot.say(user, ' ');
   bot.say(user, 'Type !twitter [@handle] to add your twitter handle.');
-  bot.say(user, 'Type !dribble [profile | https://dribble.com/profile] to add your dribble profile.');
+  bot.say(user, 'Type !dribble [https://dribble.com/profile] to add your dribble profile.');
   bot.say(user, 'Type !website [https://news.layervault.com/] to add your personal site.');
   bot.say(user, ' ');
   bot.say(user, 'Access any of this information again by typing !aboutme or !whois [user].');
   bot.say(user, 'For more bot commands, please type !help');
 }
-
+/* ------------------------- */
+/* Find and set website info */
+/* ------------------------- */
+function website(user, args){
+  if(args[1] == undefined){
+    User.findOne({'name':user}, function(err,person){
+      if (err) return handleError(err);
+      bot.say(config.channels[0], person.social.website);
+    });
+  } else if (args[1] == "add") {
+    User.findOne({'name':user}, function(err,person){
+      if (err) return handleError(err);
+      person.social.website = args[2];
+      person.save(function(err, data){
+        if (err) return handleError(err);
+        bot.say(config.channels[0], "Your website is now " + args[2]);
+      });
+    });
+  } else {
+    User.findOne({'name':args[1]}, function(err, person){
+      if (err) return handleError(err);
+      if(person != null){
+        bot.say(config.channels[0], args[1]+"'s website is "+person.social.website);
+      } else {
+        bot.say(config.channels[0], "Sorry I can't find that user.");
+      }
+    });
+  }
+}
+/* ------------------------- */
+/* Find and set dribble info */
+/* ------------------------- */
+function dribble(user, args){
+  if(args[1] == undefined){
+    User.findOne({'name':user}, function(err,person){
+      if (err) return handleError(err);
+      bot.say(config.channels[0], person.social.dribble);
+    });
+  } else if (args[1] == "add") {
+    User.findOne({'name':user}, function(err,person){
+      if (err) return handleError(err);
+      person.social.dribble = args[2];
+      person.save(function(err, data){
+        if (err) return handleError(err);
+        bot.say(config.channels[0], "Your dribble profile is now " + args[2]);
+      });
+    });
+  } else {
+    User.findOne({'name':args[1]}, function(err, person){
+      if (err) return handleError(err);
+      if(person != null){
+        bot.say(config.channels[0], args[1]+"'s dribble profile is "+person.social.dribble);
+      } else {
+        bot.say(config.channels[0], "Sorry I can't find that user.");
+      }
+    });
+  }
+}
 /* ------------------------- */
 /* Find and set twitter info */
 /* ------------------------- */
@@ -254,11 +316,9 @@ function choose(words){
   bot.say(config.channels[0], words[answer]);
   return words[answer];
 }
-/* ---------------------- */
-/* Returns funny messages */
-/* when you ping dnbot    */
-/* Needs a message array  */
-/* ---------------------- */
+/* ------------------------------------------ */
+/* Returns funny messages when you ping dnbot */
+/* ------------------------------------------ */
 function pingTheBot(words){
   words.forEach(function(word){
     if(word=="dnbot"){
