@@ -49,7 +49,8 @@ var userSchema = mongoose.Schema({
     twitter: String,
     website: String,
     dribble: String
-  }
+  },
+  favorite_gif: String
 });
 var User = mongoose.model('User', userSchema);
 
@@ -94,9 +95,11 @@ function setLog(foo, bar){
   });
 }
 
+function setFavGif(){
+
+}
 bot.on("message", function(from, to, text, message) {
   setLog(from, text);
-
   var input = text.split(" ");
 
   if(text.charAt(0) == "!"){
@@ -118,6 +121,8 @@ bot.on("message", function(from, to, text, message) {
       choose(input);
     } else if(key == 'gifme'){
       findGif(input);
+    } else if(key == 'trending'){
+      trendingGifs();
     }
   }
   pingTheBot(input);
@@ -147,13 +152,7 @@ function welcomeMessage(user){
 function findGif(words){
   words.shift();
   var input = words.join("+");
-
-  var url;
-  if (input == ""){
-    url = "http://api.giphy.com/v1/gifs/trending?api_key=dc6zaTOxFJmzC&limit=1";
-  } else {
-    url = "http://api.giphy.com/v1/gifs/random?api_key=dc6zaTOxFJmzC&tag=" + input;
-  }
+  var url = "http://api.giphy.com/v1/gifs/random?api_key=dc6zaTOxFJmzC&tag=" + input;
 
   http.get(url, function(res){
     var body = '';
@@ -164,7 +163,7 @@ function findGif(words){
       var data = JSON.parse(body);
 
       if (input == ""){
-        bot.say(config.channels[0], data.data[0].images.original.url);
+        trendingGifs();
       } else {
         if(data.data.image_url == undefined){
           bot.say(config.channels[0], "No results.");
@@ -176,8 +175,24 @@ function findGif(words){
       }
     });
   });
-
-
+}
+/* -------------------------- */
+/* Get one gif of the top 100 */
+/* -------------------------- */
+function trendingGifs(){
+  http.get("http://api.giphy.com/v1/gifs/trending?api_key=dc6zaTOxFJmzC&limit=100", function(res){
+    var body = '';
+    var rand = Math.floor(Math.random()*100)-1;
+    res.on('data', function(chunk){
+      body += chunk;
+    });
+    res.on('end', function(){
+      var data = JSON.parse(body);
+  //console.log(rand);
+      bot.say(config.channels[0], data.data[rand].images.original.url);
+      bot.say(config.channels[0], "Trending gif #"+rand);
+    });
+  });
 }
 /* ------------------ */
 /* Chooses one option */
