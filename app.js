@@ -135,8 +135,10 @@ bot.on("message", function(from, to, text, message) {
       choose(input);
     } else if(key == 'gifme'){
       findGif(input);
+    } else if(key == 'gif'){
+      findGif(input);
     } else if(key == 'trending'){
-      trendingGif();
+      trendingGif(input[1]);
     } else if(key == 'setgif'){
       setFavGif(from, input[1]);
     } else if(key == 'twitter'){
@@ -167,6 +169,26 @@ function welcomeMessage(user){
   bot.say(user, ' ');
   bot.say(user, 'Access any of this information again by typing !aboutme or !whois [user].');
   bot.say(user, 'For more bot commands, please type !help');
+}
+/* ------------------- */
+/* Display social info */
+/* ------------------- */
+function social(user, args){
+  if(args[1] == undefined){
+    User.findOne({'name':user}, function(err,person){
+      if (err) return handleError(err);
+      bot.say(config.channels[0], "Website: "+ person.social.website +" - Twitter: "+ person.social.twitter +" - Dribble: "+ person.social.dribble);
+    });
+  } else {
+    User.findOne({'name':args[1]}, function(err, person){
+      if (err) return handleError(err);
+      if(person != null){
+        bot.say(config.channels[0], args[1]+"\'s Website: "+ person.social.website +" - "+args[1]+"\'s Twitter: "+ person.social.twitter +" - "+args[1]+"\'s Dribble: "+ person.social.dribble);
+      } else {
+        bot.say(config.channels[0], "Sorry I can't find that user.");
+      }
+    });
+  }
 }
 /* ------------------------- */
 /* Find and set website info */
@@ -274,7 +296,7 @@ function findGif(words){
       var data = JSON.parse(body);
 
       if (input == ""){
-        trendingGif();
+        trendingGif(null);
       } else {
         if(data.data.image_url == undefined){
           bot.say(config.channels[0], "No results.");
@@ -291,8 +313,10 @@ function findGif(words){
 /* -------------------------- */
 /* Get one gif of the top 100 */
 /* -------------------------- */
-function trendingGif(){
+function trendingGif(num){
   http.get("http://api.giphy.com/v1/gifs/trending?api_key=dc6zaTOxFJmzC&limit=100", function(res){
+
+    console.log(num);
     var body = '';
     var rand = Math.floor(Math.random()*100)-1;
     res.on('data', function(chunk){
@@ -301,8 +325,15 @@ function trendingGif(){
     res.on('end', function(){
       var data = JSON.parse(body);
   //console.log(rand);
-      bot.say(config.channels[0], data.data[rand].images.original.url);
-      bot.say(config.channels[0], "Trending gif #"+rand);
+      if(num != undefined && num >= 0 && num < 100){
+        bot.say(config.channels[0], data.data[num].images.original.url);
+        bot.say(config.channels[0], "Trending gif #"+num);
+      } else {
+        bot.say(config.channels[0], data.data[rand].images.original.url);
+        bot.say(config.channels[0], "Trending gif #"+rand);
+      }
+
+
     });
   });
 }
