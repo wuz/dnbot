@@ -13,7 +13,6 @@
 // DOING:
 // 1. Chat logs
 // 2. !twitter
-// 3. gifs
 
 var irc = require('irc'),
     geocoder = require('geocoder'),
@@ -76,7 +75,7 @@ bot.on('join#bottest', function(nick, message){
     } else {
       console.log("Welcome back " + user + "!");
     }
-  })
+  });
 });
 
 // Log files
@@ -95,8 +94,13 @@ function setLog(foo, bar){
   });
 }
 
-function setFavGif(){
-
+function setFavGif(user, gif){
+  User.findOne({'name':user}, function(err, person){
+    if (err) return handleError(err);
+    person.favorite_gif = gif;
+    person.save();
+    console.log(person);
+  });
 }
 bot.on("message", function(from, to, text, message) {
   setLog(from, text);
@@ -123,6 +127,8 @@ bot.on("message", function(from, to, text, message) {
       findGif(input);
     } else if(key == 'trending'){
       trendingGifs();
+    } else if(key == 'setgif'){
+      setFavGif(from, input[1]);
     }
   }
   pingTheBot(input);
@@ -152,6 +158,8 @@ function welcomeMessage(user){
 function findGif(words){
   words.shift();
   var input = words.join("+");
+
+  // API DOCS : https://github.com/giphy/GiphyAPI
   var url = "http://api.giphy.com/v1/gifs/random?api_key=dc6zaTOxFJmzC&tag=" + input;
 
   http.get(url, function(res){
@@ -168,9 +176,10 @@ function findGif(words){
         if(data.data.image_url == undefined){
           bot.say(config.channels[0], "No results.");
         } else {
-          var tags = data.data.tags.join(", ");
+          //tags below gifs
+          //var tags = data.data.tags.join(", ");
+          //bot.say(config.channels[0], tags);
           bot.say(config.channels[0], data.data.image_url);
-          bot.say(config.channels[0], tags);
         }
       }
     });
