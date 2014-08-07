@@ -121,53 +121,6 @@ bot.on("message", function(from, to, text, message) {
     }
   }
   pingTheBot(input);
-
-
-/*
-	if(text.substr(0,10)=="!gifsearch") {
-		var giphy_url = "http://api.giphy.com/v1/gifs/search?api_key=dc6zaTOxFJmzC&q="+encodeURIComponent(text.substr(11))+"&limit=10";
-		http.get(giphy_url, function(res) {
-			var body = '';
-			res.on('data', function(chunk) {
-				body += chunk;
-			});
-			res.on('end', function() {
-				var dataResponse = JSON.parse(body);
-				console.log(dataResponse);
-				if(dataResponse.data) {
-					for(i=0;i<dataResponse.data.length;i++) {
-						bot.say(from,dataResponse.data[i].id+" | "+dataResponse.data[i].images.fixed_height.url);
-					}
-				} else {
-					botError();
-				}
-			});
-		}).on('error', function(e) {
-			console.log("Got error: ", e);
-		});
-	}
-*/
-/*
-	if(text.substr(0,4)=="!gif" && text.substr(0,6)!="!gifme" && text.substr(0,10)!="!gifsearch") {
-		var giphy2_url = "http://api.giphy.com/v1/gifs/"+encodeURIComponent(text.substr(5))+"?api_key=dc6zaTOxFJmzC";
-		http.get(giphy2_url, function(res) {
-			var body = '';
-			res.on('data', function(chunk) {
-				body += chunk;
-			});
-			res.on('end', function() {
-				var dataResponse = JSON.parse(body);
-				if(dataResponse.data) {
-					bot.say(config.channels[0],dataResponse.data.images.original.url);
-				} else {
-					botError();
-				}
-			});
-		}).on('error', function(e) {
-			console.log("Got error: ", e);
-		});
-	}
-*/
 });
 
 function botError() {
@@ -194,7 +147,14 @@ function welcomeMessage(user){
 function findGif(words){
   words.shift();
   var input = words.join("+");
-  var url = "http://api.giphy.com/v1/gifs/random?api_key=dc6zaTOxFJmzC&tag=" + input;
+
+  var url;
+  if (input == ""){
+    url = "http://api.giphy.com/v1/gifs/trending?api_key=dc6zaTOxFJmzC&limit=1";
+  } else {
+    url = "http://api.giphy.com/v1/gifs/random?api_key=dc6zaTOxFJmzC&tag=" + input;
+  }
+
   http.get(url, function(res){
     var body = '';
     res.on('data', function(chunk){
@@ -202,16 +162,22 @@ function findGif(words){
     });
     res.on('end', function(){
       var data = JSON.parse(body);
-      var tags = data.data.tags.join(", ");
 
-      if(data.data.image_url == undefined){
-        bot.say(config.channels[0], "No results.");
+      if (input == ""){
+        bot.say(config.channels[0], data.data[0].images.original.url);
       } else {
-        bot.say(config.channels[0], data.data.image_url);
-        bot.say(config.channels[0], tags);
+        if(data.data.image_url == undefined){
+          bot.say(config.channels[0], "No results.");
+        } else {
+          var tags = data.data.tags.join(", ");
+          bot.say(config.channels[0], data.data.image_url);
+          bot.say(config.channels[0], tags);
+        }
       }
     });
   });
+
+
 }
 /* ------------------ */
 /* Chooses one option */
