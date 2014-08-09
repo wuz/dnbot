@@ -1,0 +1,2 @@
+Examplejailbot requests: hello 
+jailbot requests: hello world 

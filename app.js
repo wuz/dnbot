@@ -1,21 +1,18 @@
 // Chat bot for #DN on irc.freenode.net
 //
 // TODO:
-// 1. Feature requests
-// 3. dnbot response array
-// 4. vines
+// 1. vines https://github.com/starlock/vino/wiki/API-Reference
+// 2. youtube titles
+// 3. google
+// 4. imdb
 // 5. !whois
 // 6. !help
 // 7. !tell
-// 8. youtube titles
+// 8. !seen
 // 9. get real gif api key
-// 10. !seen
-// 11. !twitter = your last tweet
-// 12. add dnbot ping message array
-// 13. imdb
+// 10. !twitter = your last tweet
 //
 // DOING:
-// 1. Chat logs
 
 var irc = require('irc'),
     geocoder = require('geocoder'),
@@ -33,6 +30,7 @@ var config = {
     server: "irc.freenode.net",
     botName: "DNbot"
 };
+
 
 /* ---------------------- */
 /* Database configuration */
@@ -62,14 +60,25 @@ var userSchema = mongoose.Schema({
 var User = mongoose.model('User', userSchema);
 
 
-
-// Initialize bot
+/* -------------- */
+/* Initialize bot */
+/* -------------- */
 var bot = new irc.Client(config.server, config.botName, {
     channels:config.channels
 });
 
+/* ------------------------------ */
+/* Track connecting to the server */
+/* ------------------------------ */
+console.log("Now connecting...");
+bot.on('registered', function(){
+  console.log("Welcome to freenode!");
+  resetLogs();
+});
 
-// Checks user for first visit
+/* -------------------------- */
+/* Check user for first visit */
+/* -------------------------- */
 bot.on('join#bottest', function(nick, message){
   var user = nick.toLowerCase();
   User.findOne({'name': user }, function(err, person){
@@ -78,7 +87,7 @@ bot.on('join#bottest', function(nick, message){
     if(person == null){
       welcomeMessage(nick);
       var date = new Date();
-      var newUser = new User({name: user, first_seen: date, points_left: 1});
+      var newUser = new User({name: user, first_seen: date, points: 0,  points_left: 1});
       newUser.save(function(err, data){ if (err) return console.log(err); });
       console.log("New user: " + user + "!");
     } else {
@@ -87,31 +96,11 @@ bot.on('join#bottest', function(nick, message){
   });
 });
 
-// Log files
-// Work in progress
-function resetLogs(){
-  fs.writeFile('logs.txt', "");
-}
-function getLogs(){
 
-}
-function setLog(foo, bar){
-  var time = new Date().toTimeString();
-  var logMsg = time + ": " + foo + " => " + bar + "\n";
-  fs.appendFile("logs.txt", logMsg, function(error){
-    if (error) throw error;
-  });
-}
 
-function setFavGif(user, gif){
-  User.findOne({'name':user}, function(err, person){
-    if (err) return handleError(err);
-    person.favorite_gif = gif;
-    person.save();
-    console.log(person);
-  });
-}
-
+/* ------------- */
+/* Main function */
+/* ------------- */
 bot.on("message", function(from, to, text, message) {
   setLog(from, text);
   var input = text.split(" ");
@@ -147,15 +136,18 @@ bot.on("message", function(from, to, text, message) {
       dribble(from, input);
     } else if(key == 'website'){
       website(from, input);
+    } else if(key == 'social'){
+      social(from, input);
+    } else if(key == 'logs'){
+      getLogs();
+    } else if(key == 'feature'){
+      feature(from, input);
+    } else if(key == 'features'){
+      feature(from, input);
     }
   }
   pingTheBot(input);
 });
-
-function botError() {
-	bot.say(config.channels[0], "I'm sorry Dave, I'm afraid I can't do that...");
-	return false;
-}
 
 /* ------------------------- */
 /* Introduce user to channel */
@@ -163,12 +155,102 @@ function botError() {
 function welcomeMessage(user){
   bot.say(user, 'Welcome to the Designer News chatroom ' + user + "! Be sure to set up your info so we can network online.");
   bot.say(user, ' ');
-  bot.say(user, 'Type !twitter [@handle] to add your twitter handle.');
-  bot.say(user, 'Type !dribble [https://dribble.com/profile] to add your dribble profile.');
-  bot.say(user, 'Type !website [https://news.layervault.com/] to add your personal site.');
+  bot.say(user, 'Type !twitter add [@handle] to add your twitter handle.');
+  bot.say(user, 'Type !dribble add [https://dribble.com/profile] to add your dribble profile.');
+  bot.say(user, 'Type !website add [https://news.layervault.com/] to add your personal site.');
   bot.say(user, ' ');
   bot.say(user, 'Access any of this information again by typing !aboutme or !whois [user].');
   bot.say(user, 'For more bot commands, please type !help');
+}
+/* ----------------- */
+/* Log chat messages */
+/* ----------------- */
+function resetLogs(){
+  fs.writeFile('logs.txt', "");
+}
+function getLogs(){
+  fs.readFile('logs.txt', {encoding: 'utf8'}, function(err, data){
+    if (err) throw err;
+    data = data.replace(/\n/g, '\\n');
+    getGist(data, 'logs.txt');
+  });
+}
+function setLog(foo, bar){
+  var time = new Date().toTimeString();
+  var logMsg = time + ": " + foo + " => " + bar + "\n";
+  fs.appendFile("logs.txt", logMsg, function(error){
+    if (error) throw error;
+  });
+}
+/* ------------- */
+/* Create a gist */
+/* ------------- */
+function getGist(logs, file){
+  var body = "";
+  var gistHead = "";
+  var options = {
+    hostname: 'api.github.com',
+    path: '/gists',
+    method: 'POST',
+    headers: {
+      'User-Agent': 'Node.js'
+    }
+  }
+  if (file == "logs.txt"){
+    gistHead = "Designer News chat logs";
+  } else if (file == "features.txt"){
+    gistHead = "New feature requests";
+  }
+  var reqOptions = '{"description":"'+ gistHead +'", "public": true, "files": {"'+ file +'":{"content": "'+ logs +'"}}}';
+  console.log(reqOptions);
+  var req = https.request(options, function(res){
+    res.setEncoding('utf8');
+    res.on('data', function(chunk){ body+=chunk });
+    res.on('end', function(){
+      var body2 = JSON.parse(body);
+      console.log(body2);
+      bot.say(config.channels[0], body2.html_url);
+    });
+  });
+
+  req.write(reqOptions);
+  req.on('error', function(e){
+    console.log('problem with the request: ' + e.message);
+  });
+  req.end();
+}
+/* ---------------- */
+/* Feature requests */
+/* ---------------- */
+function feature(user, args){
+  var body = "";
+  if(args[1] == undefined){
+    getFeatures();
+  } else {
+    for(var i=1; i<args.length; i++){
+      body += args[i] + " ";
+      console.log(body);
+      setFeature(user, body);
+    }
+  }
+}
+function getFeatures(){
+  fs.readFile('features.txt', {encoding: 'utf8'}, function(err, data){
+    if (err) throw err;
+    console.log(data);
+    data = data.replace(/\n/g, '\\n');
+    getGist(data, 'features.txt');
+  });
+}
+function setFeature(foo, bar){
+  var time = new Date().toTimeString();
+  var featureMsg = foo + " requests: " + bar + "\n";
+  fs.appendFile("features.txt", featureMsg, function(error){
+    if (error) throw error;
+  });
+}
+function resetFeatures(){
+  fs.writeFile('features.txt', '');
 }
 /* ------------------- */
 /* Display social info */
@@ -177,13 +259,13 @@ function social(user, args){
   if(args[1] == undefined){
     User.findOne({'name':user}, function(err,person){
       if (err) return handleError(err);
-      bot.say(config.channels[0], "Website: "+ person.social.website +" - Twitter: "+ person.social.twitter +" - Dribble: "+ person.social.dribble);
+      bot.say(config.channels[0], "Website: "+ person.social.website +" \n Twitter: "+ person.social.twitter +" \n Dribble: "+ person.social.dribble);
     });
   } else {
     User.findOne({'name':args[1]}, function(err, person){
       if (err) return handleError(err);
       if(person != null){
-        bot.say(config.channels[0], args[1]+"\'s Website: "+ person.social.website +" - "+args[1]+"\'s Twitter: "+ person.social.twitter +" - "+args[1]+"\'s Dribble: "+ person.social.dribble);
+        bot.say(config.channels[0], args[1]+"\'s Website: "+ person.social.website +" \n "+args[1]+"\'s Twitter: "+ person.social.twitter +" \n "+args[1]+"\'s Dribble: "+ person.social.dribble);
       } else {
         bot.say(config.channels[0], "Sorry I can't find that user.");
       }
@@ -277,6 +359,22 @@ function twitter(user, args){
     });
   }
 }
+/* ----------------------- */
+/* Set user's favorite gif */
+/* ----------------------- */
+function setFavGif(user, gif){
+  User.findOne({'name':user}, function(err, person){
+    if (err) return handleError(err);
+    if(gif != undefined){
+      person.favorite_gif = gif;
+      person.save();
+      bot.say(config.channels[0], 'Gif saved!');
+    } else {
+      bot.say(config.channels[0], 'Please enter a gif to save.');
+    }
+
+  });
+}
 /* --------------- */
 /* Find random gif */
 /* --------------- */
@@ -332,8 +430,6 @@ function trendingGif(num){
         bot.say(config.channels[0], data.data[rand].images.original.url);
         bot.say(config.channels[0], "Trending gif #"+rand);
       }
-
-
     });
   });
 }
@@ -351,9 +447,13 @@ function choose(words){
 /* Returns funny messages when you ping dnbot */
 /* ------------------------------------------ */
 function pingTheBot(words){
+  var msg = ['does a backflip', 'hates all of you', 'loves you all', 'can\'t get laid', 'won the lottery', 'is not amused', 'waves hello :)'];
+  var length = msg.length;
+  var rand = Math.floor(Math.random()*length);
   words.forEach(function(word){
-    if(word=="dnbot"){
-      bot.action(config.channels[0], 'does a backflip');
+    var foo = word.toLowerCase();
+    if(foo=="dnbot"){
+      bot.action(config.channels[0], msg[rand]);
     }
   });
 }
@@ -438,11 +538,3 @@ function getWeather(location){
 function celToFah(cel){
   return ((cel*9)/5)+32;
 }
-/* ------------------------------ */
-/* Track connecting to the server */
-/* ------------------------------ */
-console.log("Now connecting...");
-bot.on('registered', function(){
-  console.log("Welcome to freenode!");
-  resetLogs();
-});

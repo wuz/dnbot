@@ -1,3 +1,1 @@
-16:02:35 GMT-0500 (CDT): jailbot => !twitter hi
-16:02:40 GMT-0500 (CDT): jailbot => !twitter jailbot
-16:02:46 GMT-0500 (CDT): jailbot => !twitter
+21:39:31 GMT-0500 (CDT): jailbot => !feature hello world
