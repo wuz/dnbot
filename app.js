@@ -229,9 +229,9 @@ function feature(user, args){
   } else {
     for(var i=1; i<args.length; i++){
       body += args[i] + " ";
-      console.log(body);
-      setFeature(user, body);
     }
+    console.log(body);
+    setFeature(user, body);
   }
 }
 function getFeatures(){
@@ -247,6 +247,7 @@ function setFeature(foo, bar){
   var featureMsg = foo + " requests: " + bar + "\n";
   fs.appendFile("features.txt", featureMsg, function(error){
     if (error) throw error;
+    bot.say(config.channels[0], "Thank you "+ foo +" your feature request has been processed");
   });
 }
 function resetFeatures(){
