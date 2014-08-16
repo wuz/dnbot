@@ -1,18 +1,22 @@
 // Chat bot for #DN on irc.freenode.net
 //
-// TODO:
+// ICEBOX:
 // 1. vines https://github.com/starlock/vino/wiki/API-Reference
-// 2. youtube titles
-// 3. google
-// 4. imdb
-// 5. !whois
-// 6. !help
-// 7. !tell
-// 8. !seen
-// 9. get real gif api key
-// 10. !twitter = your last tweet
+//
+// TODO:
+// 1. google
+// 2. !whois
+// 3. !help
+// 4. !tell
+// 5. !seen
+// 6. youtube titles
+// 7. imdb
+// 8. get real gif api key
+// 9. !twitter = your last tweet
 //
 // DOING:
+//
+//
 
 var irc = require('irc'),
     geocoder = require('geocoder'),
@@ -23,7 +27,7 @@ var irc = require('irc'),
     fs = require('fs'),
     MongoClient = require('mongodb').MongoClient,
     mongoose = require('mongoose'),
-    format = require('util').format;
+    google = require('google');
 
 var config = {
     channels: ["#bottest"],
@@ -96,8 +100,6 @@ bot.on('join#bottest', function(nick, message){
   });
 });
 
-
-
 /* ------------- */
 /* Main function */
 /* ------------- */
@@ -144,6 +146,10 @@ bot.on("message", function(from, to, text, message) {
       feature(from, input);
     } else if(key == 'features'){
       feature(from, input);
+    } else if(key == 'g'){
+      googleSearch(input);
+    } else if(key == 'google'){
+      googleSearch(input);
     }
   }
   pingTheBot(input);
@@ -182,6 +188,21 @@ function setLog(foo, bar){
     if (error) throw error;
   });
 }
+/* ------------------ */
+/* Do a google search */
+/* ------------------ */
+function googleSearch(query){
+  var body = "";
+  google.resultsPerPage = 1;
+  for(var i=1; i<query.length; i++){
+    body += query[i] + " ";
+  }
+  google(body, function(err, next, links){
+    if (err) throw err;
+    bot.say(config.channels[0], links[0].title + " - " + links[0].href);
+  });
+}
+
 /* ------------- */
 /* Create a gist */
 /* ------------- */
@@ -202,13 +223,12 @@ function getGist(logs, file){
     gistHead = "New feature requests";
   }
   var reqOptions = '{"description":"'+ gistHead +'", "public": true, "files": {"'+ file +'":{"content": "'+ logs +'"}}}';
-  console.log(reqOptions);
+
   var req = https.request(options, function(res){
     res.setEncoding('utf8');
     res.on('data', function(chunk){ body+=chunk });
     res.on('end', function(){
       var body2 = JSON.parse(body);
-      console.log(body2);
       bot.say(config.channels[0], body2.html_url);
     });
   });
@@ -230,14 +250,12 @@ function feature(user, args){
     for(var i=1; i<args.length; i++){
       body += args[i] + " ";
     }
-    console.log(body);
     setFeature(user, body);
   }
 }
 function getFeatures(){
   fs.readFile('features.txt', {encoding: 'utf8'}, function(err, data){
     if (err) throw err;
-    console.log(data);
     data = data.replace(/\n/g, '\\n');
     getGist(data, 'features.txt');
   });
@@ -415,7 +433,6 @@ function findGif(words){
 function trendingGif(num){
   http.get("http://api.giphy.com/v1/gifs/trending?api_key=dc6zaTOxFJmzC&limit=100", function(res){
 
-    console.log(num);
     var body = '';
     var rand = Math.floor(Math.random()*100)-1;
     res.on('data', function(chunk){
@@ -423,7 +440,6 @@ function trendingGif(num){
     });
     res.on('end', function(){
       var data = JSON.parse(body);
-  //console.log(rand);
       if(num != undefined && num >= 0 && num < 100){
         bot.say(config.channels[0], data.data[num].images.original.url);
         bot.say(config.channels[0], "Trending gif #"+num);
@@ -481,7 +497,6 @@ function getBtc(){
 function getMOTD(){
   request('http://news.layervault.com', function(error, response, body){
     if(!error && response.statusCode == 200){
-      //console.log(body);
       var start=body.indexOf("MOTDMessageContent")+20;
       var end=body.indexOf("</span>", start);
       var foo=body.substring(start,end);
