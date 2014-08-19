@@ -48,7 +48,7 @@ var irc = require('irc'),
     google = require('google');
 
 var config = {
-    channels: ["#bottest"],
+    channels: ["#DN"],
     server: "irc.freenode.net",
     botName: "DNbot"
 };
@@ -103,7 +103,7 @@ bot.on('registered', function(){
 /* -------------------------- */
 /* Check user for first visit */
 /* -------------------------- */
-bot.on('join#bottest', function(nick, message){
+bot.on('join#DN', function(nick, message){
   var user = nick.toLowerCase();
   var date = new Date();
 
@@ -597,7 +597,27 @@ function pingTheBot(words){
 /* Send bot commands */
 /* ----------------- */
 function getHelp(user){
-  bot.say(user, "Hi " + user + "! Here are my commands\n!motd - display the current DN MOTD\n!weather <zip,city,location> - tells you the weather in a location.\n!help - displays this help dialog\n!btc - returns the current bitcoin price\n!feature <feature request> - request a feature for the bot\n!set <setting> <option> - set various settings. Options: dribbble <username> - set your dribbble username. website <url> set your personal website.\n!dribbble - return your most recent followed shot (must have !set dribbble <username> before using)\n!gif <id> - get gif by id from Giphy\n!gifme <term> - returns a gif related to the term\n!gifsearch <term> - search for gif id's by term. Returned as PM.\n !whois <user> - return information set by a user with the !set command");
+  
+  bot.say(user, "Hi " + user + "! Here are my commands");
+  bot.say(user, "All commands are not case sensitive. <sample> denotes required input, [sample] denotes optional input");
+  bot.say(user, "!help - get this help message");
+  bot.say(user, "!motd - Return the current DN message of the day.");
+  bot.say(user, "!weather <location> - get the weather for any location");
+  bot.say(user, "!btc - get the current price of bitcoins in usd");
+  bot.say(user, "!feature/features [request] - make a feature request or return the current list of feature requests");
+  bot.say(user, "!twitter/dribble/website add <url> - add your social information");
+  bot.say(user, "!twitter/dribble/website [user] - find out a user's social information");
+  bot.say(user, "!social [user] - find out social information about a user");
+  bot.say(user, "!choose <option1> <option2> ... - choose between several options");
+  bot.say(user, "!gif/gifme [keyword] - Find a gif");
+  bot.say(user, "!trending [number] - Get one of the top 100 gifs");
+  bot.say(user, "!setfav <link> - Set your favorite link/gif/whatever");
+  bot.say(user, "!fav/favorite [user] - Retrieve your favorite link, or a user's favorite link");
+  bot.say(user, "!logs - Get the chat logs in a gif");
+  bot.say(user, "!g <query> - Return the first google search result");
+  bot.say(user, "!aboutme - Get your IRC user information");
+  bot.say(user, "!whois <user> - Find out IRC information about another user");
+  bot.say(user, "!seen <user> - Find out the last time a user said something");
 }
 /* ------------------ */
 /* Find bitcoin price */
