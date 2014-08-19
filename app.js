@@ -1,21 +1,39 @@
 // Chat bot for #DN on irc.freenode.net
 //
+// CURRENT FEATURES:
+// * Designer News Message of the day (!motd/!dnmotd)
+// * Display bot functions (!help)
+// * Get the weather for a location (!weather [location])
+// * Print out current bitcoin price (!btc)
+// * Choose between several options (!choose [option1] [option2] ...)
+// * Find a gif from gifhy based on keyword (!gif/!gifme [keyword])
+// * Get one of the top 100 gifs from gifhy (!trending [1/100])
+// * Set your favorite link to share with others (!setfav [link])
+// * Add or retrieve a twitter profile (!twitter [add] [@example])
+// * Add or retrieve a dribble profule (!dribble [add] [example])
+// * Add or retrieve a personal website (!website [add] [http://example.com])
+// * Set a favorite link/gif/whatever (!fav/!favorite/!setfav)
+// * Display social information (!social [user])
+// * Get chat logs in a gist (!logs)
+// * Make a feature request (!feature/!features [request])
+// * Make a google search (!g/!google)
+// * Find out your information (!aboutme)
+// * Find another user's information(!whois/!info [user])
+// * Figure out the last time the user said something (!seen [user])
+//
 // ICEBOX:
 // 1. vines https://github.com/starlock/vino/wiki/API-Reference
 //
 // TODO:
-// 1. google
-// 2. !whois
-// 3. !help
-// 4. !tell
-// 5. !seen
-// 6. youtube titles
-// 7. imdb
-// 8. get real gif api key
-// 9. !twitter = your last tweet
+// 1. !help
+// 2. !tell
+// 3. youtube titles
+// 4. imdb
+// 5. get real gif api key
+// 6. !twitter = your last tweet
+// 7. upvotes/downvotes
 //
 // DOING:
-//
 //
 
 var irc = require('irc'),
@@ -51,14 +69,16 @@ var userSchema = mongoose.Schema({
   name: String,
   first_seen: Date,
   last_seen: Date,
+  last_msg: String,
   social:{
     twitter: String,
     website: String,
     dribble: String
   },
-  favorite_gif: String,
+  favorite_link: String,
   points: Number,
-  points_left: Number,
+  upvotes: Number,
+  downvotes: Number,
   quotes: Array
 });
 var User = mongoose.model('User', userSchema);
@@ -85,28 +105,84 @@ bot.on('registered', function(){
 /* -------------------------- */
 bot.on('join#bottest', function(nick, message){
   var user = nick.toLowerCase();
+  var date = new Date();
+
   User.findOne({'name': user }, function(err, person){
     if (err) return handleError(err);
 
     if(person == null){
       welcomeMessage(nick);
-      var date = new Date();
-      var newUser = new User({name: user, first_seen: date, points: 0,  points_left: 1});
+
+      var newUser = new User({name: user, first_seen: date, points: 5, upvotes: 0, downvotes: 0});
       newUser.save(function(err, data){ if (err) return console.log(err); });
       console.log("New user: " + user + "!");
     } else {
+      person.last_seen = date;
+      person.save();
       console.log("Welcome back " + user + "!");
     }
   });
 });
 
+function whoIs(user, args){
+  if (args[1] == undefined){
+    aboutMe(user);
+  } else {
+    User.findOne({'name':args[1]}, function(err, person){
+      if (err) throw err;
+      if (person == null){
+        bot.say(config.channels[0], "Sorry I can't find that user");
+      } else {
+        bot.say(config.channels[0], person.name+"'s twitter account is "+person.social.twitter+", "+person.name+"'s dribble account is "+person.social.dribble+", and "+person.name+"'s personal website is "+person.social.website+".");
+        bot.say(config.channels[0], person.name+" has "+person.upvotes+" upvotes and "+person.downvotes + " downvotes resulting in "+ (person.upvotes - person.downvotes)+" karma.");
+        bot.say(config.channels[0], person.name+"'s favorite link is "+ person.favorite_link+ " and has " + person.quotes.length + " quotes.");
+      }
+    });
+  }
+}
+
+function lastSeen(from, args){
+  if(args[1]==undefined){
+    User.findOne({'name': from}, function(err, person){
+      if (err) throw err;
+      if (person == null){
+        bot.say(config.channels[0], "Sorry I can't find that user.");
+      } else {
+        bot.say(config.channels[0], person.name+" was last seen "+person.last_seen+" saying \""+person.last_msg+"\"");
+      }
+    });
+  } else {
+    User.findOne({'name': args[1]}, function(err, person){
+      if (err) throw err;
+      if (person == null){
+        bot.say(config.channels[0], "Sorry I can't find that user.");
+      } else {
+        bot.say(config.channels[0], person.name+" was last seen "+person.last_seen+" saying "+ person.last_msg);
+      }
+    });
+  }
+}
+
+function setLastSeen(from, msg){
+  var date = new Date();
+  User.findOne({'name': from}, function(err, person){
+    if (err) throw err;
+    if (person == null){
+      console.log("sorry I cant find that info");
+    } else {
+      person.last_seen = date;
+      person.last_msg = msg;
+      person.save();
+    }
+  });
+}
 /* ------------- */
 /* Main function */
 /* ------------- */
 bot.on("message", function(from, to, text, message) {
   setLog(from, text);
   var input = text.split(" ");
-
+  setLastSeen(from, text);
   if(text.charAt(0) == "!"){
     var key = input[0].slice(1).toLowerCase();
 
@@ -130,8 +206,10 @@ bot.on("message", function(from, to, text, message) {
       findGif(input);
     } else if(key == 'trending'){
       trendingGif(input[1]);
-    } else if(key == 'setgif'){
-      setFavGif(from, input[1]);
+    } else if(key == 'setfav'){
+      setFav(from, input[1]);
+    } else if(key == 'setfavorite'){
+      setFav(from, input[1]);
     } else if(key == 'twitter'){
       twitter(from, input);
     } else if(key == 'dribble'){
@@ -150,6 +228,18 @@ bot.on("message", function(from, to, text, message) {
       googleSearch(input);
     } else if(key == 'google'){
       googleSearch(input);
+    } else if(key == 'aboutme'){
+      aboutMe(from);
+    } else if(key == 'fav'){
+      getFav(from, input);
+    } else if(key == 'favorite'){
+      getFav(from, input);
+    } else if(key == 'whois'){
+      whoIs(from, input);
+    } else if(key == 'info'){
+      whoIs(from, input);
+    } else if(key == 'seen'){
+      lastSeen(from, input);
     }
   }
   pingTheBot(input);
@@ -202,7 +292,6 @@ function googleSearch(query){
     bot.say(config.channels[0], links[0].title + " - " + links[0].href);
   });
 }
-
 /* ------------- */
 /* Create a gist */
 /* ------------- */
@@ -271,6 +360,17 @@ function setFeature(foo, bar){
 function resetFeatures(){
   fs.writeFile('features.txt', '');
 }
+/* ---------------------------------- */
+/* Returns information about the user */
+/* ---------------------------------- */
+function aboutMe(user){
+  User.findOne({'name': user}, function(err, person){
+    if (err) throw err;
+    bot.say(config.channels[0], "Your twitter account is "+person.social.twitter+", your dribble account is "+person.social.dribble+", and your personal website is "+person.social.website+".");
+    bot.say(config.channels[0], "You have "+person.upvotes+" upvotes and "+person.downvotes + " downvotes resulting in "+ (person.upvotes - person.downvotes)+" karma.");
+    bot.say(config.channels[0], "Your favorite link is "+ person.favorite_link+ " and you have " + person.quotes.length + " quotes.");
+  });
+}
 /* ------------------- */
 /* Display social info */
 /* ------------------- */
@@ -327,7 +427,7 @@ function dribble(user, args){
   if(args[1] == undefined){
     User.findOne({'name':user}, function(err,person){
       if (err) return handleError(err);
-      bot.say(config.channels[0], person.social.dribble);
+      bot.say(user, person.social.dribble);
     });
   } else if (args[1] == "add") {
     User.findOne({'name':user}, function(err,person){
@@ -335,16 +435,16 @@ function dribble(user, args){
       person.social.dribble = args[2];
       person.save(function(err, data){
         if (err) return handleError(err);
-        bot.say(config.channels[0], "Your dribble profile is now " + args[2]);
+        bot.say(user, "Your dribble profile is now " + args[2]);
       });
     });
   } else {
     User.findOne({'name':args[1]}, function(err, person){
       if (err) return handleError(err);
       if(person != null){
-        bot.say(config.channels[0], args[1]+"'s dribble profile is "+person.social.dribble);
+        bot.say(user, args[1]+"'s dribble profile is "+person.social.dribble);
       } else {
-        bot.say(config.channels[0], "Sorry I can't find that user.");
+        bot.say(user, "Sorry I can't find that user.");
       }
     });
   }
@@ -356,7 +456,7 @@ function twitter(user, args){
   if(args[1] == undefined){
     User.findOne({'name':user}, function(err,person){
       if (err) return handleError(err);
-      bot.say(config.channels[0], person.social.twitter);
+      bot.say(user, person.social.twitter);
     });
   } else if (args[1] == "add") {
     User.findOne({'name':user}, function(err,person){
@@ -364,39 +464,58 @@ function twitter(user, args){
       person.social.twitter = args[2];
       person.save(function(err, data){
         if (err) return handleError(err);
-        bot.say(config.channels[0], "Your twitter handle is now " + args[2]);
+        bot.say(user, "Your twitter handle is now " + args[2]);
       });
     });
   } else {
     User.findOne({'name':args[1]}, function(err, person){
       if (err) return handleError(err);
       if(person != null){
-        bot.say(config.channels[0], args[1]+"'s twitter handle is "+person.social.twitter);
+        bot.say(user, args[1]+"'s twitter handle is "+person.social.twitter);
       } else {
-        bot.say(config.channels[0], "Sorry I can't find that user.");
+        bot.say(user, "Sorry I can't find that user.");
       }
     });
   }
 }
 /* ----------------------- */
-/* Set user's favorite gif */
+/* Set user's favorite link */
 /* ----------------------- */
-function setFavGif(user, gif){
+function setFav(user, link){
   User.findOne({'name':user}, function(err, person){
     if (err) return handleError(err);
-    if(gif != undefined){
-      person.favorite_gif = gif;
+    if(link != undefined){
+      person.favorite_link = link;
       person.save();
-      bot.say(config.channels[0], 'Gif saved!');
+      bot.say(config.channels[0], 'Link saved!');
     } else {
-      bot.say(config.channels[0], 'Please enter a gif to save.');
+      bot.say(config.channels[0], 'Please enter a link to save.');
     }
 
   });
 }
-/* --------------- */
-/* Find random gif */
-/* --------------- */
+function getFav(user, args){
+  if(args[1] != undefined){
+    console.log("person is "+args[1]);
+    User.findOne({'name': args[1]}, function(err, person){
+      if (err) throw err;
+      if (person != null){
+        bot.say(config.channels[0], person.name+"'s favorite link is "+person.favorite_link);
+      } else {
+        bot.say(config.channels[0], "Sorry I could not find that user.");
+      }
+
+    });
+  } else {
+    User.findOne({'name':user}, function(err, person){
+      if (err) throw err;
+      bot.say(config.channels[0], "Your favorite link is "+ person.favorite_link);
+    });
+  }
+}
+/* -------- */
+/* Find gif */
+/* -------- */
 function findGif(words){
   words.shift();
   var input = words.join("+");

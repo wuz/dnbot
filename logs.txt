@@ -1,1 +1,4 @@
-00:47:41 GMT-0500 (CDT): jailbot_ => !google hi
+19:39:17 GMT-0500 (CDT): jailbot => !seen
+19:39:24 GMT-0500 (CDT): jailbot => !seen hello
+19:39:26 GMT-0500 (CDT): jailbot => helloooo
+19:39:29 GMT-0500 (CDT): jailbot => !seen jailbot
